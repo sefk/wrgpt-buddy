@@ -5,18 +5,30 @@ from poker import gmail, state
 from poker.models import RawEmail
 
 
+MAX_CONSECUTIVE_FAILURES = 3
+
+
 def poll(service, query: str, log=lambda s: None) -> tuple[int, int]:
-    """Fetch and ingest every matching message not already stored. Returns (new, failed)."""
+    """Fetch and ingest every matching message not already stored. Returns (new, failed).
+
+    Stops early after repeated consecutive failures (e.g. quota exhausted even
+    after retries); unfetched messages are picked up by the next poll.
+    """
     known = set(RawEmail.objects.exclude(gmail_id=None).values_list("gmail_id", flat=True))
     todo = [gid for gid in gmail.list_message_ids(service, query) if gid not in known]
-    new = bad = 0
+    new = bad = streak = 0
     for gid in reversed(todo):  # oldest first, so state builds in order
         try:
             _, created, parsed = state.ingest(gmail.fetch_raw(service, gid), "gmail", gmail_id=gid)
         except Exception as exc:
             log(f"{gid}: ERROR {exc}")
             bad += 1
+            streak += 1
+            if streak >= MAX_CONSECUTIVE_FAILURES:
+                log(f"stopping after {streak} consecutive failures; {len(todo) - new - bad} left")
+                break
             continue
+        streak = 0
         new += created
         err = f" errors={len(parsed.errors)}" if parsed.errors else ""
         log(f"{gid}: {'new' if created else 'matched'} {parsed.meta.kind} {parsed.meta.subject}{err}")

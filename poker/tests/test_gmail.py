@@ -12,11 +12,18 @@ FIXTURES = Path(__file__).parent / "fixtures"
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def no_pacing(monkeypatch):
+    monkeypatch.setattr("poker.gmail.FETCH_INTERVAL_S", 0)
+
+
 class _Call:
     def __init__(self, result):
         self.result = result
 
-    def execute(self):
+    def execute(self, num_retries=0):
+        if isinstance(self.result, Exception):
+            raise self.result
         return self.result
 
 
@@ -29,6 +36,7 @@ class FakeGmail:
         self.order = list(reversed(self.msgs))
         self.page_size = page_size
         self.fetched = []
+        self.fail = set()
 
     def users(self):
         return self
@@ -46,6 +54,8 @@ class FakeGmail:
 
     def get(self, userId, id, format):
         self.fetched.append(id)
+        if id in self.fail:
+            return _Call(RuntimeError("quota exceeded"))
         return _Call({"raw": base64.urlsafe_b64encode(self.msgs[id]).decode()})
 
 
@@ -70,3 +80,16 @@ def test_poll_skips_known_and_matches_eml_imports():
     svc.fetched.clear()
     assert poll(svc, "q") == (0, 0)
     assert svc.fetched == []
+
+
+def test_poll_stops_after_consecutive_failures_and_resumes():
+    files = sorted((FIXTURES / "hand_2").glob("*.eml"))
+    svc = FakeGmail(files)
+    oldest_first = list(svc.msgs)
+    svc.fail = set(oldest_first[5:])  # quota runs out after five messages
+    new, bad = poll(svc, "q")
+    assert (new, bad) == (5, 3)
+    assert len(svc.fetched) == 8  # gave up instead of hammering the rest
+    svc.fail.clear()
+    new, bad = poll(svc, "q")
+    assert (new, bad) == (len(files) - 5, 0)

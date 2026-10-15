@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import os
+import time
 from collections.abc import Iterator
 
 from django.conf import settings
@@ -75,6 +76,18 @@ def list_message_ids(service, query: str) -> Iterator[str]:
             return
 
 
+# messages.get costs 5 quota units; the per-user limit is per minute, so pace
+# fetches and let googleapiclient back off and retry on 403/429 rate limits.
+FETCH_INTERVAL_S = 0.1
+FETCH_RETRIES = 6
+
+
 def fetch_raw(service, gmail_id: str) -> bytes:
-    resp = service.users().messages().get(userId="me", id=gmail_id, format="raw").execute()
+    resp = (
+        service.users()
+        .messages()
+        .get(userId="me", id=gmail_id, format="raw")
+        .execute(num_retries=FETCH_RETRIES)
+    )
+    time.sleep(FETCH_INTERVAL_S)
     return base64.urlsafe_b64decode(resp["raw"])
