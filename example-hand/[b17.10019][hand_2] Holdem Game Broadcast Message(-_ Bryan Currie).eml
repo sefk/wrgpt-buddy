@@ -1,0 +1,132 @@
+Delivered-To: sefklon@gmail.com
+Received: by 2002:a05:6a10:8146:b0:75b:ec3:beae with SMTP id l6csp1421832pxa;
+        Tue, 13 Oct 2026 20:27:23 -0700 (PDT)
+X-Received: by 2002:a05:620a:2691:b0:93b:d7a2:dd2c with SMTP id af79cd13be357-93ebd2823e2mr2254381485a.60.1791948442839;
+        Tue, 13 Oct 2026 20:27:22 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1791948442; cv=none;
+        d=google.com; s=arc-20260327;
+        b=q+5efd6RGDBFnyPttZRXR8TWZ2iHK7KIFEmeMYknpnkosuuzBH/Ahvq+EjSNTrihsd
+         d5LCGXOq9pF5/TaLyjNgQ5DznWDMo8ld9drCJWORf3QPBAPwnUKaHEtICmELf3GnGTog
+         eppnHVFh4kvps/DZm8eBGP0GDSkDH+1WS/+3eN2jl7I5lcnul+TLbV0Ktst3rv2POyr4
+         8OTFBa+ysKQIovA+WcZ9PhZz5Pt6hN0hKXcDhRcNKlagj4TNHlnQK9fua1eLSmL48XL6
+         meBhiM0/YeFTCifhRJ8Bom+lYcgdxLB3uQOmcLVq59GMbv3WIYM0jW91CKc/NKyumo7c
+         Jl6Q==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=date:message-id:subject:from:to:dkim-signature;
+        bh=z0Jmmz/xLIuZu2KAltZt0VATQhG0ZMAHRdyTJOUsLJA=;
+        fh=StgVNstZVm6CA/jWzog2GqNh+VGFtKDwql9+cOAjdD0=;
+        b=YnuDDHFmqGVpSTlc2JvQEoN4WRJxZqeeNeUqKbYY3EmNYmWl4IiZq29lfhIpuOrvJz
+         nI0lNCt8vyYKZgZfxBmLHx4VUaoyUsnlLWn3XMNuFKXn9rx8CV7pYOMgxiay2tqxZixG
+         9vOfgsDhD5YM10EsDfs1fn4g3btLRLt+Zxi/TiGl4lMazM5cX4NoLJpVfam8s0husgsS
+         RCIWDG2W6zeoN2er81EvzsoNk9vP2QH0/qP2B0xDLmzcTlWRqaTzCBONyGRAP8Sxa2jj
+         AaDMKv5DzEPfj0e4599s6ph0bmaAAzjxAs6ePKLtd8IOFCWtw5mUxss2k+3P7yLMMGW4
+         8P+w==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@wrgpt.org header.s=mail._domainkey header.b=JdO9Jz8B;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Return-Path: <floorman@wrgpt.org>
+Received: from presto.wrgpt.org (wrgpt.org. [74.208.146.72])
+        by mx.google.com with ESMTP id af79cd13be357-93f00140444si185551685a.436.2026.10.13.20.27.22
+        for <sefklon@gmail.com>;
+        Tue, 13 Oct 2026 20:27:22 -0700 (PDT)
+Received-SPF: pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) client-ip=74.208.146.72;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@wrgpt.org header.s=mail._domainkey header.b=JdO9Jz8B;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=wrgpt.org;
+	s=mail._domainkey; t=1791948442;
+	bh=wHv3r9g57YTweHBm/ApXMqteu+FHbSD5ZmmLLUrgMVQ=;
+	h=To:From:Subject:Date:From;
+	b=JdO9Jz8B+hRkscTBDzqsWDeGns5FCtcNv7qf5+ET9NJv6T5+o/gaxeGQSjhWLfJOw
+	 MPkXkUCjmksKu7ZZ0/K1Dp7tcR2HEq1ogjVyYM8TNFinX6criW+QMv/6eKdt8mf49F
+	 ix+00RJuAFp9BkK+Oc6r0tauPxIzSG8BI14KiaiKhHIDrr/G1SgNZK5Fmn7KgFrTF2
+	 FKI8HkLblsDmonDlUO1Nf6r27GeCekPo1iwAtMO6MyAzGSsle+bGpBpSv28fDy1xlc
+	 +jQDaLmP0ooVRQL0ktlNYKEjBqzm9wWbCDAkSfsweDmz9w05DWD5euELHT+ZVPjVac
+	 1x5oa/5kWypIQ==
+Received: by presto.wrgpt.org (Postfix, from userid 1000)
+	id 6BBDC22E996; Tue, 13 Oct 2026 20:27:22 -0700 (PDT)
+To: sefklon@gmail.com
+From: dealer@wrgpt.org
+Subject: [b17.10019][hand:2] Holdem Game Broadcast Message(-> Bryan Currie)
+Message-Id: <20261014032722.6BBDC22E996@presto.wrgpt.org>
+Date: Tue, 13 Oct 2026 20:27:22 -0700 (PDT)
+
+! Table b17, Hand 2, Day 2
+
+! sefk calls 
+! Bryan Currie is next to act, $650 to call
+! Unlimited raises
+! Pot size: $2250
+! Next timeout set for Wed, 14 Oct 2026 11:02 PDT
+! Betting round: 1
+! Board: ? ? ? ? ?
++-+----------------------------+------------+------------+------+----+------------+
+|#|   Name                     | Bankroll   |  Action    |Status|Pot#| Pot Size   |
++-+----------------------------+------------+------------+------+----+------------+
+ 1|   sefk                     |     59,650 |        650 |      |    |            |
+ 2|D> Bryan Currie             |     59,900 |          0 |      |    |            |
+ 3|   Two_Jacks                |     59,700 |        100 |      |    |            |
+ 4|   Michael Rankin           |     59,800 |        200 |      |    |            |
+ 5|V  Options Dee              |     60,000 |          0 | NoSho|    |            |
+ 6|   Mark Ballinger           |     60,000 |          0 |folded|    |            |
+ 7|   Capparella               |     59,350 |        650 |      |    |            |
+ 8|   Aardvark                 |     60,000 |          0 |folded|    |            |
+ 9|   RiverRat                 |     59,350 |        650 |      |    |            |
++-+----------------------------+------------+------------+------+----+------------+
+
+
+This table's current status can be found at https://hands.wrgpt.org/b/b17.html
+
+TOURNEY INFORMATION
+
+NOTICE:
+
+This is the REAL WRGPT36.
+
+Please play as soon as you are able to keep the action going.
+
+Yahoo.com and the domains it serves (aol.com, pacbell.net. ...)
+are still not very reliable.  Some emails are getting through.
+Some are being deferred and retried later.  After 12 hours
+if the email could not be delivered then the server cancels it.
+If you ever get your ID email send an ADDR to get a second
+more reliable email added.  If you can't get your ID then
+send an email from your registered email to floorman36@wrgpt.org 
+and we will manually add the second email.
+
+Note: 
+- If you are away from the game for 28 consecutive days you will be removed.
+- Blinds increase every 14 days.  The structure is available at https://wrgpt.org/holidays
+- If you timeout too many times you will be removed.
+
+--
+
+WRGPT has no entry fee and no prizes.  The amounts
+shown in the standings are hypothetical prizes that
+might be what a $10k tourney of this size may have.
+
+======
+
+Total Empty Seats: 0
+No Live redraw in progress.
+
+===== helpful links =====
+
+So, you were eliminated?  See this: 
+https://www.wrgpt.org/iwaseliminated.html
+
+The manual on how to use the commands is here:
+https://www.wrgpt.org/manual
+
+The round structure and holidays are at:
+https://www.wrgpt.org/holidays
+
+Having problems? Send email to floorman36@wrgpt.org.
+
+You can follow WRGPT on Facebook: https://facebook.com/wrgpt
+Hand history: https://hands.wrgpt.org
+
+Your automated Holdem dealer

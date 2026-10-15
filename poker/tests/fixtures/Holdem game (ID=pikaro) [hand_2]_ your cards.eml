@@ -1,0 +1,91 @@
+Delivered-To: sefklon@gmail.com
+Received: by 2002:a05:6a10:62d0:b0:73b:28f0:a1c5 with SMTP id e16csp4461594pxj;
+        Tue, 15 Sep 2026 11:14:09 -0700 (PDT)
+X-Received: by 2002:a05:620a:2702:b0:937:3a1d:175a with SMTP id af79cd13be357-93a297cd141mr1242812685a.3.1789495956195;
+        Tue, 15 Sep 2026 11:12:36 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1789495956; cv=none;
+        d=google.com; s=arc-20260327;
+        b=H1PSfgMWN40y5ijGzyk8Dz65TAclGz/U4HxUPj3HG/S7y+kMJd7+0PxIHSC3nKnLNC
+         +W0puMuJs8y+wHPi076NF65n8bIYpYDjnRjiBLMjfCy7fU8BO07WC6JeRSXndPvhDXdd
+         qw6ckf60I/K1OMz1retYvpj+mMHZIv+PkO7TVbYqCXc+K2IV8s9AetKFnBkI5xKskUe/
+         uHJIPO6PkyoKJNpAiSYx/1kbmcttT8MJviMd+OKr2pat2+921UnY9UDp7aVfASLJt7yv
+         bZBXzYlVnnMKxCLZmr6dz5T1INYWlS5SVifaEAd0kuiD/c+66i6Dv0a1YloTSYgHuQ5F
+         GhGg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=date:message-id:subject:from:reply-to:to;
+        bh=qE1ExgOZUoktILFg5R8V5KxuMgJF/6VNownjbJvVCok=;
+        fh=StgVNstZVm6CA/jWzog2GqNh+VGFtKDwql9+cOAjdD0=;
+        b=XHvv4rPidrO4200PLlKvwB5L84v+KJn0RcEhHpwxQXgvowm5gpj+cyqjH1IOQeU8PD
+         L6xWQY4jbkTzca2ZhQwKscSVbuhaVJUe/ALFppJDwduBUKnq4eaWLoBBcvv6UM1xiVXn
+         kUbr0vufCJ8H/vRgkankZfrUtlag9dd3+A3sDDpZT4EWm0AKr9cpYIiFjg4x0/h2qTQB
+         Ff/1/IFzGOjz/nvwHqA0R3XumnJtAKWUoBTIFoGD4ANvpFBXWvShSqJ1Un27fkixUaCd
+         gX2UZ0xYIwSL4Hei6Y59ycwaR5/4TM5WJ4IhBuZqqkOZifkv1oF00wxgcDgch1pPJCMn
+         C3xQ==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Return-Path: <floorman@wrgpt.org>
+Received: from presto.wrgpt.org (wrgpt.org. [74.208.146.72])
+        by mx.google.com with ESMTP id af79cd13be357-93b81dced51si19863685a.498.2026.09.15.11.12.35
+        for <sefklon@gmail.com>;
+        Tue, 15 Sep 2026 11:12:36 -0700 (PDT)
+Received-SPF: pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) client-ip=74.208.146.72;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Received: by presto.wrgpt.org (Postfix, from userid 1000)
+	id 4AC39236FBE; Tue, 15 Sep 2026 11:12:35 -0700 (PDT)
+To: sefklon@gmail.com
+Reply-To: dealer@wrgpt.org
+From: dealer@wrgpt.org
+Subject: Holdem game (ID=pikaro) [hand:2]: your cards
+Message-Id: <20260915181235.4AC39236FBE@presto.wrgpt.org>
+Date: Tue, 15 Sep 2026 11:12:35 -0700 (PDT)
+
+! Table a38, Hand 2, Day 2
+
+! Your hole cards are 4h 2h
+
+
+This table's current status can be found at http://hands.wrgpt.org/a/a38.html
+
+TOURNEY INFORMATION
+
+NOTICE:
+
+This is the practice round for WRGPT36.
+The real tourney will start around October 12, 2026.
+
+Note: 
+- If you are away from the game for 28 consecutive days you will be removed.
+- Blinds increase every 14 days.  The structure is available at http://wrgpt.org/holidays
+
+--
+
+WRGPT has no entry fee and no prizes.  The amounts
+shown in the standings are hypothetical prizes that
+might be what a $10k tourney of this size may have.
+
+======
+
+Total Empty Seats: 5
+No Live redraw in progress.
+
+===== helpful links =====
+
+So, you were eliminated?  See this: 
+http://www.wrgpt.org/iwaseliminated.html
+
+The manual on how to use the commands is here:
+http://www.wrgpt.org/manual
+
+The round structure and holidays are at:
+http://www.wrgpt.org/holidays
+
+Having problems? Send email to floorman36@wrgpt.org.
+
+You can follow WRGPT on Facebook: http://facebook.com/wrgpt
+Hand history: http://hands.wrgpt.org
+
+Your automated Holdem dealer
