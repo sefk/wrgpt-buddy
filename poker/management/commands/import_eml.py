@@ -3,7 +3,6 @@ from pathlib import Path
 from django.core.management.base import BaseCommand
 
 from poker import state
-from poker.models import RawEmail
 
 
 class Command(BaseCommand):
@@ -18,19 +17,14 @@ class Command(BaseCommand):
             files += sorted(p.rglob("*.eml")) if p.is_dir() else [p]
         new = dup = bad = 0
         for f in files:
-            data = f.read_bytes()
             try:
-                parsed = state.parse_raw_bytes(data)
+                _, created, parsed = state.ingest(
+                    f.read_bytes(), "eml", fallback_id=f"file:{f.name}"
+                )
             except Exception as exc:  # parse_email shouldn't raise; be safe
                 self.stderr.write(f"{f.name}: ERROR {exc}")
                 bad += 1
                 continue
-            mid = parsed.meta.message_id or f"file:{f.name}"
-            raw, created = RawEmail.objects.get_or_create(
-                message_id=mid, defaults={"raw": data, "source": "eml"}
-            )
-            state.refresh_meta(raw, parsed)
-            state.apply(raw, parsed)
             if created:
                 new += 1
             else:

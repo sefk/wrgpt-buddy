@@ -1,0 +1,40 @@
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+
+from poker import gmail, state
+from poker.models import RawEmail
+
+
+def poll(service, query: str, log=lambda s: None) -> tuple[int, int]:
+    """Fetch and ingest every matching message not already stored. Returns (new, failed)."""
+    known = set(RawEmail.objects.exclude(gmail_id=None).values_list("gmail_id", flat=True))
+    todo = [gid for gid in gmail.list_message_ids(service, query) if gid not in known]
+    new = bad = 0
+    for gid in reversed(todo):  # oldest first, so state builds in order
+        try:
+            _, created, parsed = state.ingest(gmail.fetch_raw(service, gid), "gmail", gmail_id=gid)
+        except Exception as exc:
+            log(f"{gid}: ERROR {exc}")
+            bad += 1
+            continue
+        new += created
+        err = f" errors={len(parsed.errors)}" if parsed.errors else ""
+        log(f"{gid}: {'new' if created else 'matched'} {parsed.meta.kind} {parsed.meta.subject}{err}")
+    return new, bad
+
+
+class Command(BaseCommand):
+    help = "Fetch new WRGPT mail from Gmail, store it, and apply it to hand state."
+
+    def add_arguments(self, parser):
+        parser.add_argument("--query", default=settings.GMAIL_QUERY)
+
+    def handle(self, *args, **opts):
+        try:
+            service = gmail.build_service()
+        except gmail.GmailAuthError as exc:
+            raise CommandError(str(exc))
+        new, bad = poll(service, opts["query"], log=self.stdout.write)
+        self.stdout.write(f"{new} new, {bad} failed")
+        if bad:
+            raise CommandError(f"{bad} messages failed to ingest")

@@ -136,3 +136,10 @@ MAILERS = {
 WRGPT_PLAYER_NAME = os.environ.get('WRGPT_PLAYER_NAME', 'sefk')
 WRGPT_PLAYER_EMAIL = os.environ.get('WRGPT_PLAYER_EMAIL', 'sefklon@gmail.com')
 WRGPT_DEALER_TZ = 'America/Los_Angeles'
+
+# Gmail ingestion
+SECRETS_DIR = BASE_DIR / 'secrets'
+GMAIL_CLIENT_FILE = SECRETS_DIR / 'gmail-client.json'
+GMAIL_TOKEN_FILE = SECRETS_DIR / 'gmail-token.json'
+GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
+GMAIL_QUERY = os.environ.get('GMAIL_QUERY', 'from:wrgpt.org OR to:wrgpt.org')

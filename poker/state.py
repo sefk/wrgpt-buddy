@@ -188,6 +188,25 @@ def refresh_meta(raw_email: RawEmail, parsed: ParsedEmail) -> None:
     raw_email.save()
 
 
+def ingest(
+    data: bytes, source: str, gmail_id: str | None = None, fallback_id: str = ""
+) -> tuple[RawEmail, bool, ParsedEmail]:
+    """Store one raw email (deduped by Message-ID), parse it, and apply it.
+
+    Returns (raw_email, created, parsed).
+    """
+    parsed = parse_raw_bytes(data)
+    mid = parsed.meta.message_id or fallback_id or f"gmail:{gmail_id}"
+    raw, created = RawEmail.objects.get_or_create(
+        message_id=mid, defaults={"raw": data, "source": source, "gmail_id": gmail_id}
+    )
+    if gmail_id and raw.gmail_id != gmail_id:
+        raw.gmail_id = gmail_id  # first seen as an .eml file, now matched in Gmail
+    refresh_meta(raw, parsed)
+    apply(raw, parsed)
+    return raw, created, parsed
+
+
 def parse_raw(raw_email: RawEmail) -> ParsedEmail:
     """Parse a stored email and refresh its metadata columns."""
     parsed = parse_raw_bytes(bytes(raw_email.raw))
