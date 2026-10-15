@@ -24,13 +24,32 @@ load_dotenv(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
+def _env_list(name, default=''):
+    return [v.strip() for v in (os.environ.get(name) or default).split(',') if v.strip()]
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-dev-only')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
+# Debug is OFF unless DJANGO_DEBUG=1 (bin/run-dev and local work set it in .env).
+DEBUG = os.environ.get('DJANGO_DEBUG', '0') == '1'
 
-ALLOWED_HOSTS = [h for h in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h]
+# Tailnet name + public port that `tailscale serve` exposes (see README).
+TAILNET_HOST = os.environ.get('WRGPT_TAILNET_HOST', 'studio.tailc33641.ts.net')
+TAILNET_PORT = os.environ.get('WRGPT_TAILNET_PORT', '10000')
+
+ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', f'localhost,127.0.0.1,{TAILNET_HOST}')
+CSRF_TRUSTED_ORIGINS = _env_list(
+    'DJANGO_CSRF_TRUSTED_ORIGINS',
+    f'https://{TAILNET_HOST}:{TAILNET_PORT},https://{TAILNET_HOST}',
+)
+
+if not DEBUG:
+    # tailscale serve terminates TLS and proxies plain HTTP to gunicorn.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    SESSION_COOKIE_SECURE = os.environ.get('DJANGO_SECURE_COOKIES', '1') == '1'
+    CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
 
 
 # Application definition
@@ -47,6 +66,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -121,6 +141,25 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
+
+
+# Logging: everything to stderr/stdout; launchd captures it.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'plain': {'format': '%(asctime)s %(levelname)s %(name)s: %(message)s'},
+    },
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'plain'},
+    },
+    'root': {'handlers': ['console'], 'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO')},
+}
 
 
 # Email

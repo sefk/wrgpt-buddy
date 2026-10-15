@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# One poll cycle (launchd runs this). Failures go to stderr and exit non-zero.
+set -uo pipefail
+. "$(dirname "$0")/_common.sh"
+cd "$ROOT"
+load_env
+ts() { date '+%Y-%m-%d %H:%M:%S'; }
+if "$UV" run --no-sync manage.py poll_gmail; then
+  echo "$(ts) POLL OK"
+else
+  rc=$?
+  echo "$(ts) POLL FAILED (exit $rc)" | tee /dev/stderr
+  exit "$rc"
+fi

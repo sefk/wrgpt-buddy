@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Run gunicorn in the foreground (launchd runs this).
+set -euo pipefail
+. "$(dirname "$0")/_common.sh"
+cd "$ROOT"
+load_env
+exec "$UV" run --no-sync gunicorn buddy.wsgi:application \
+  --bind "${GUNICORN_BIND:-127.0.0.1:8017}" \
+  --workers "${GUNICORN_WORKERS:-2}" \
+  --access-logfile - --error-logfile - --capture-output

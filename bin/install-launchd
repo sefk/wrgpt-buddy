@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Render deploy/launchd/*.plist.in into ~/Library/LaunchAgents and (re)load them.
+set -euo pipefail
+. "$(dirname "$0")/_common.sh"
+cd "$ROOT"
+ensure_env
+mkdir -p "$LOG_DIR" "$AGENTS_DIR"
+for label in "$WEB_LABEL" "$POLL_LABEL"; do
+  tpl="$ROOT/deploy/launchd/$label.plist.in"
+  dest="${PLIST_DEST:-$AGENTS_DIR}/$label.plist"
+  sed -e "s|@ROOT@|$ROOT|g" -e "s|@UV@|$UV|g" -e "s|@HOME@|$HOME|g" -e "s|@LOG_DIR@|$LOG_DIR|g" "$tpl" > "$dest"
+  plutil -lint "$dest" >/dev/null
+  [ -n "${PLIST_DEST:-}" ] && { echo "rendered $dest"; continue; }
+  launchctl bootout "$GUI/$label" 2>/dev/null || true
+  launchctl bootstrap "$GUI" "$dest"
+  echo "loaded $label"
+done
