@@ -128,6 +128,20 @@ class MyHand(models.Model):
     private_at = models.DateTimeField(null=True, blank=True)
     last_command = models.CharField(max_length=200, blank=True)
     last_command_at = models.DateTimeField(null=True, blank=True)
+    # From the dealer's "Advance action acknowledgement": what it will do for me.
+    advance_action = models.TextField(blank=True, help_text="dealer's description, e.g. 'Check if $0 to you, fold otherwise'")
+    advance_sticky = models.BooleanField(default=False)
+    advance_action_at = models.DateTimeField(null=True, blank=True)
+    # From the dealer's "Error Message": my last command was rejected.
+    last_error = models.TextField(blank=True)
+    last_error_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.hand} {self.hole_cards}"
+
+    @property
+    def has_unresolved_error(self) -> bool:
+        """An error newer than my last command means I still need to act."""
+        if not self.last_error_at:
+            return False
+        return not self.last_command_at or self.last_error_at > self.last_command_at
