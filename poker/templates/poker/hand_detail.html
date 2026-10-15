@@ -1,0 +1,122 @@
+{% extends "poker/base.html" %}
+{% load poker_extras %}
+{% block title %}{{ hand.table.name }} hand {{ hand.number }} · WRGPT Buddy{% endblock %}
+{% block head %}{% if is_current and not hand.is_over %}<meta http-equiv="refresh" content="60">{% endif %}{% endblock %}
+{% block content %}
+<section class="header">
+  <div class="title">
+    <h1>{{ hand.table.name }} <span class="muted">hand</span> {{ hand.number }}</h1>
+    <span class="pill {% if hand.is_over or unfinished %}over{% else %}live{% endif %}">{% if hand.is_over %}Hand over{% elif unfinished %}Unfinished{% else %}In progress{% endif %}</span>
+  </div>
+  <dl class="facts">
+    {% if hand.day %}<div><dt>Day</dt><dd>{{ hand.day }}</dd></div>{% endif %}
+    {% if round_name and not hand.is_over %}<div><dt>Round</dt><dd>{{ round_name }}</dd></div>{% endif %}
+    {% if hand.pot is not None %}<div><dt>Pot</dt><dd>{{ hand.pot|money }}</dd></div>{% endif %}
+    {% if not hand.is_over %}
+    <div class="wide"><dt>To act</dt><dd>
+      {% if next_to_act_name %}<strong>{{ next_to_act_name }}</strong>{% if hand.to_call is not None %}, {{ hand.to_call|money }} to call{% endif %}{% else %}–{% endif %}
+    </dd></div>
+    {% if hand.next_timeout %}<div class="wide"><dt>Timeout</dt><dd>{{ hand.next_timeout|date:"D M j, g:i a T" }} <span class="muted">({{ hand.next_timeout|relative }})</span></dd></div>{% endif %}
+    {% endif %}
+  </dl>
+  <p class="links">
+    {% if hand.table.status_url %}<a href="{{ hand.table.status_url }}" rel="noopener">Table status</a>{% endif %}
+    <a href="https://hands.wrgpt.org" rel="noopener">hands.wrgpt.org</a>
+    <a href="https://www.wrgpt.org/manual" rel="noopener">Manual</a>
+  </p>
+</section>
+
+{% if missing %}
+<div class="banner warn" role="alert">
+  {{ missing|length }} broadcast{{ missing|length|pluralize }} never arrived ({% for s in missing %}{{ s }}{% if not forloop.last %}, {% endif %}{% endfor %}), so the action log may be incomplete. Current state is still correct; the end-of-hand history will fill the gaps.
+</div>
+{% endif %}
+
+<section class="mine {% if my_turn %}turn{% endif %}">
+  <h2>{{ me }}{% if my_turn %} <span class="pill turn">Your turn</span>{% endif %}</h2>
+  {% if mine and mine.has_unresolved_error %}
+  <div class="banner err" role="alert"><strong>Dealer error:</strong> {{ mine.last_error }}</div>
+  {% endif %}
+  <div class="mine-grid">
+    <div class="hole">
+      {% if mine and mine.hole_cards %}{% cards mine.hole_cards %}{% else %}<span class="cards"><span class="card empty"></span><span class="card empty"></span></span>{% endif %}
+      {% if not mine or not mine.hole_cards %}<p class="muted small">No hole cards received.</p>{% endif %}
+    </div>
+    <dl class="facts">
+      {% if my_seat %}
+      <div><dt>Bankroll</dt><dd>{{ my_seat.seat.bankroll_start|money }}</dd></div>
+      {% if my_seat.status %}<div><dt>Status</dt><dd>{{ my_seat.status }}</dd></div>{% endif %}
+      {% endif %}
+      {% if not hand.is_over and my_seat.status != 'folded' %}
+      <div><dt>To call</dt><dd>{% if mine and mine.to_call is not None %}{{ mine.to_call|money }}{% else %}{{ hand.to_call|money }}{% endif %}</dd></div>
+      {% endif %}
+      {% if mine and mine.advance_action %}
+      <div class="wide"><dt>Pending action</dt><dd>{{ mine.advance_action }}{% if mine.advance_sticky %} <span class="pill sticky">sticky</span>{% endif %}</dd></div>
+      {% endif %}
+      {% if mine and mine.last_command %}
+      <div class="wide"><dt>Last command</dt><dd><code>{{ mine.last_command }}</code>{% if mine.last_command_at %} <span class="muted small">{{ mine.last_command_at|date:"M j, g:i a" }}</span>{% endif %}</dd></div>
+      {% endif %}
+    </dl>
+  </div>
+</section>
+
+<section>
+  <h2>Board</h2>
+  {% board hand.board %}
+</section>
+
+<section>
+  <h2>Seats</h2>
+  <div class="scroll">
+  <table class="seats">
+    <thead><tr><th>#</th><th>Player</th><th class="num">Bankroll</th><th class="num">{% if hand.is_over %}Net{% else %}In hand{% endif %}</th><th>Status</th>{% if any_shown %}<th>Shown</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr class="{% if r.is_me %}me{% endif %} {% if r.status == 'folded' %}folded{% endif %}">
+        <td>{{ r.seat.seat_number }}{% if r.seat.is_dealer %} <span class="dealer" title="Dealer button">D</span>{% endif %}</td>
+        <td>{% if r.to_act %}<span class="act" title="Next to act">&#9654;</span> {% endif %}{{ r.name }}</td>
+        <td class="num">{{ r.seat.bankroll_start|money }}</td>
+        <td class="num">{% if hand.is_over %}<span class="{% if r.delta > 0 %}pos{% elif r.delta < 0 %}neg{% endif %}">{{ r.delta|signed_money }}</span>{% elif r.chips %}{{ r.chips|money }}{% else %}–{% endif %}</td>
+        <td>{{ r.status }}</td>
+        {% if any_shown %}<td>{% if r.shown %}{% cards r.shown %}{% endif %}</td>{% endif %}
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="muted">No seat information.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if not hand.is_over %}<p class="muted small">Bankroll is at the start of the hand (after blinds). "In hand" is estimated from the action log.</p>{% endif %}
+</section>
+
+{% if hand.winner %}
+<section class="winner">
+  <h2>Result</h2>
+  {% for line in hand.winner.splitlines %}<p>{{ line }}</p>{% endfor %}
+</section>
+{% endif %}
+
+<section>
+  <h2>Action log</h2>
+  {% for st in streets %}
+  <h3>{{ st.name }}</h3>
+  <ul class="log">
+    {% for a in st.actions %}
+    <li class="k-{{ a.kind }}{% if a.player.name == me %} me{% endif %}">
+      {% if a.timestamp %}<time>{{ a.timestamp|date:"M j g:i a" }}</time>{% endif %}
+      {% if a.kind == "table_talk" %}<span class="talk"><b>{{ a.player.name }}</b> says: “{{ a.text }}”</span>{% else %}<span>{{ a.text|inline_cards }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% empty %}
+  <p class="muted">No actions recorded.</p>
+  {% endfor %}
+</section>
+
+<section>
+  <h2>Recommendation</h2>
+  <p class="muted">Analysis from local models and Sonnet will appear here, hidden until you ask.</p>
+  <button type="button" disabled>Show recommendation</button>
+  <span class="muted small">coming later</span>
+</section>
+{% endblock %}

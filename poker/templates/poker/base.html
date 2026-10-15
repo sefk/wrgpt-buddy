@@ -1,0 +1,27 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{% block title %}WRGPT Buddy{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'poker/poker.css' %}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="{% url 'poker:current' %}">WRGPT Buddy</a>
+  <nav>
+    <a href="{% url 'poker:current' %}" {% if nav == 'current' %}aria-current="page"{% endif %}>Current</a>
+    <a href="{% url 'poker:hands' %}" {% if nav == 'hands' %}aria-current="page"{% endif %}>History</a>
+  </nav>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer>
+  <a href="https://hands.wrgpt.org" rel="noopener">hands.wrgpt.org</a> ·
+  <a href="https://www.wrgpt.org/manual" rel="noopener">Manual</a>
+</footer>
+</body>
+</html>

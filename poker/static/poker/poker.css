@@ -1,0 +1,79 @@
+:root {
+  --bg: #f6f5f1; --panel: #fff; --text: #1d1f23; --muted: #6b7078; --line: #e2e0d9;
+  --accent: #1f6f50; --warn-bg: #fff4d6; --warn-fg: #6b4b00; --err-bg: #fde4e1; --err-fg: #8a1c12;
+  --card-bg: #fff; --card-line: #c9c6bc; --pos: #1b7a3d; --neg: #b3261e; --me: #e6f2ec;
+  --spade: #1d1f23; --club: #1b7a3d; --heart: #c62828; --diamond: #1565c0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161a; --panel: #1d2026; --text: #e6e7ea; --muted: #9aa0a8; --line: #2c3038;
+    --accent: #4fc08d; --warn-bg: #3a2f10; --warn-fg: #f2d38a; --err-bg: #43191a; --err-fg: #ffb4ab;
+    --card-bg: #e9e8e3; --card-line: #555; --pos: #5fd388; --neg: #ff8a80; --me: #1f3329;
+    --spade: #1d1f23; --club: #1b7a3d; --heart: #c62828; --diamond: #1565c0;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+a { color: var(--accent); }
+.muted { color: var(--muted); } .small { font-size: .85rem; }
+main { max-width: 860px; margin: 0 auto; padding: 12px 14px 32px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.brand { font-weight: 700; color: var(--text); text-decoration: none; }
+.top nav a { margin-left: 14px; text-decoration: none; padding: 4px 0; }
+.top nav a[aria-current] { border-bottom: 2px solid var(--accent); font-weight: 600; }
+footer { text-align: center; padding: 16px; font-size: .85rem; color: var(--muted); }
+h1 { font-size: 1.5rem; margin: .2em 0; } h2 { font-size: 1.05rem; margin: 0 0 .5em; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+h3 { font-size: .95rem; margin: 1em 0 .3em; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 12px 0; }
+.title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pill { display: inline-block; font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; text-transform: none; letter-spacing: 0; vertical-align: middle; background: var(--line); color: var(--text); }
+.pill.live { background: var(--accent); color: #fff; } .pill.turn { background: #d97706; color: #fff; } .pill.sticky { background: #6d4aff; color: #fff; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px 16px; margin: 8px 0; }
+.facts div { min-width: 0; } .facts .wide { grid-column: 1 / -1; }
+.facts dt { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.facts dd { margin: 0; font-weight: 500; }
+.links a { margin-right: 14px; font-size: .9rem; }
+.banner { border-radius: 8px; padding: 10px 12px; margin: 12px 0; }
+.banner.warn { background: var(--warn-bg); color: var(--warn-fg); }
+.banner.err { background: var(--err-bg); color: var(--err-fg); margin: 0 0 10px; }
+.mine { border-width: 2px; border-color: var(--accent); }
+.mine.turn { border-color: #d97706; }
+.mine h2 { color: var(--text); font-size: 1.15rem; text-transform: none; letter-spacing: 0; }
+.mine-grid { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.mine-grid .facts { flex: 1 1 220px; }
+.cards { display: inline-flex; gap: 6px; vertical-align: middle; }
+.card { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 2.6rem; height: 3.6rem; border-radius: 6px; background: var(--card-bg); border: 1px solid var(--card-line); line-height: 1; font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.card b { font-size: 1.25rem; } .card i { font-style: normal; font-size: 1.3rem; }
+.hole .card { width: 3.8rem; height: 5.2rem; } .hole .card b { font-size: 1.9rem; } .hole .card i { font-size: 1.9rem; }
+.card.empty { background: transparent; border: 1px dashed var(--card-line); box-shadow: none; }
+td .card { width: 1.7rem; height: 2.3rem; border-radius: 4px; } td .card b { font-size: .85rem; } td .card i { font-size: .9rem; } td .cards { gap: 3px; }
+.spade { color: var(--spade); } .club { color: var(--club); } .heart { color: var(--heart); } .diamond { color: var(--diamond); }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td.winner-cell { white-space: normal; min-width: 12ch; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.me td { background: var(--me); font-weight: 600; }
+tr.folded td { color: var(--muted); }
+.dealer { display: inline-block; background: var(--text); color: var(--bg); border-radius: 50%; width: 1.3em; height: 1.3em; text-align: center; font-size: .75rem; line-height: 1.3em; font-weight: 700; }
+.act { color: #d97706; }
+.pos { color: var(--pos); } .neg { color: var(--neg); }
+.log { list-style: none; padding: 0; margin: 0; font-size: .92rem; }
+.log li { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px dotted var(--line); }
+.log time { flex: 0 0 8.5em; color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; padding-top: 1px; }
+.log li.me { font-weight: 600; color: var(--accent); }
+.log li.k-wins { font-weight: 600; } .log li.k-other { color: var(--muted); font-size: .8rem; }
+.ic { font-weight: 600; } .ic.heart { color: var(--heart); } .ic.diamond { color: var(--diamond); } .ic.club { color: var(--club); }
+@media (prefers-color-scheme: dark) { .ic.spade { color: #e6e7ea; } .ic.heart { color: #ff8a80; } .ic.diamond { color: #82b1ff; } .ic.club { color: #69d68a; } }
+button[disabled] { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); }
+code { font-size: .88em; word-break: break-all; }
+@media (max-width: 520px) {
+  .log li { flex-direction: column; gap: 0; } .log time { flex-basis: auto; }
+  th, td { padding: 6px 5px; } table { font-size: .88rem; }
+  h1 { font-size: 1.3rem; }
+}
+
+/* Table talk in the action log */
+.talk { font-style: italic; color: var(--muted, #6b7280); }
+.talk b { font-style: normal; }

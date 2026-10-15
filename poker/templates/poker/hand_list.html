@@ -1,0 +1,31 @@
+{% extends "poker/base.html" %}
+{% load poker_extras %}
+{% block title %}Hand history · WRGPT Buddy{% endblock %}
+{% block content %}
+<h1>Hand history</h1>
+{% for table, rows in groups %}
+<section>
+  <h2>Table {{ table.name }}</h2>
+  <div class="scroll">
+  <table class="hist">
+    <thead><tr><th>Hand</th><th>Date</th><th>My cards</th><th>Result</th><th class="num">Net</th><th>Winner</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr class="{% if r.result == 'folded' %}folded{% endif %}">
+        <td><a href="{% url 'poker:hand' table.name r.hand.number %}">#{{ r.hand.number }}</a>{% if r.live %} <span class="pill live">live</span>{% elif r.unfinished %} <span class="pill over">unfinished</span>{% endif %}</td>
+        <td>{% if r.date %}{{ r.date|date:"M j" }}{% else %}–{% endif %}</td>
+        <td>{% if r.cards %}{% cards r.cards %}{% else %}–{% endif %}</td>
+        <td>{{ r.result|default:"–" }}</td>
+        <td class="num">{% if r.net is not None %}<span class="{% if r.net > 0 %}pos{% elif r.net < 0 %}neg{% endif %}">{{ r.net|signed_money }}</span>{% else %}–{% endif %}</td>
+        <td class="winner-cell">{{ r.winner|default:"–" }}{% if r.nwinners > 1 %} <span class="muted">+{{ r.nwinners|add:"-1" }}</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% empty %}
+<p class="muted">No hands yet.</p>
+{% endfor %}
+<p class="muted small">Net is bankroll at end minus start; the start figure is after blinds, so it's approximate.</p>
+{% endblock %}

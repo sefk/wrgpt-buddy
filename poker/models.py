@@ -39,6 +39,12 @@ class Table(models.Model):
         return self.name
 
 
+class HandQuerySet(models.QuerySet):
+    def dealt(self):
+        """Exclude hand 0: the dealer's pre-game seating phase, where no cards are dealt."""
+        return self.exclude(number=0)
+
+
 class Hand(models.Model):
     table = models.ForeignKey(Table, on_delete=models.CASCADE, related_name="hands")
     number = models.PositiveIntegerField()
@@ -57,6 +63,8 @@ class Hand(models.Model):
     last_sequence = models.IntegerField(default=-1)
     has_history = models.BooleanField(default=False)
     winner = models.TextField(blank=True)
+    objects = HandQuerySet.as_manager()
+
     sequences = models.JSONField(
         default=list, blank=True, help_text="broadcast sequence numbers received, sorted"
     )
