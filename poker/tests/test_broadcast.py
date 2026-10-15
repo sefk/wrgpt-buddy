@@ -9,7 +9,7 @@ import pytest
 from poker.parsing.broadcast import parse_broadcast
 from poker.parsing.types import EventKind
 
-FIXTURES = Path(__file__).parent / "fixtures"
+FIXTURES = Path(__file__).parent / "fixtures" / "hand_2"
 TZ = ZoneInfo("America/Los_Angeles")
 FILES = sorted(FIXTURES.glob("[[]b17.100*hand_2] Holdem Game Broadcast*.eml"))
 
@@ -191,3 +191,22 @@ def test_incremental_events_match_history():
     # from the fixtures, so those two actions only appear in the history.
     assert missing == [(EventKind.RAISE, "Capparella"), (EventKind.FOLD, "sefk")]
     assert [b.sequence for b in seq if b.sequence in (10016, 10025)] == []
+
+
+@pytest.mark.parametrize(
+    "text,kind",
+    [
+        ("RiverRat is back from vacation", EventKind.BACK_FROM_VACATION),
+        ("Hand over, no showdown", EventKind.HAND_OVER),
+        ("Current board is:  ? ? ? ? ?", EventKind.SHOWDOWN_BOARD),
+    ],
+)
+def test_no_showdown_lines(text, kind):
+    from poker.parsing.broadcast import parse_event
+
+    ev = parse_event(text)
+    assert ev.kind == kind
+    if kind == EventKind.BACK_FROM_VACATION:
+        assert ev.player == "RiverRat"
+    if kind == EventKind.SHOWDOWN_BOARD:
+        assert ev.cards == ()

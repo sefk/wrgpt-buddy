@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from poker.parsing import EmailKind, parse_email, parse_my_reply, parse_private
 
-FIX = Path(__file__).parent / "fixtures"
+FIX = Path(__file__).parent / "fixtures" / "hand_2"
 LA = ZoneInfo("America/Los_Angeles")
 
 

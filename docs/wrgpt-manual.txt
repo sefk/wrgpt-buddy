@@ -1,0 +1,999 @@
+
+
+	WRGPT Manual
+
+      WRGPT.org - World Rec.Gambling Poker Tournament
+
+        About
+        Manual
+        Holidays
+        Standings
+        Table Status
+        History
+        Registrations
+	Payouts
+
+                General FAQ
+	Protest FAQ
+
+                Timeout FAQ
+
+                Stats / Misc
+
+E-Mail Internet Poker Server Manual
+
+(WRGPT Server)
+
+Last updated:
+November 19, 2021
+
+Table of Contents
+
+ The Basics 
+
+ Your USER-ID 
+
+ Advance(d) Betting 
+
+ Sticky Betting 
+
+ Advance Betting
+   for Experts 
+
+ Quiet Mode 
+
+ Restricting 
+   Your Action to the Current Hand 
+
+ Restricting 
+   your Action to a Certain Betting Round 
+
+ Revealing Folded Hands 
+
+Reviewing Your Outgoing Mail 
+
+-->
+ Vacations 
+
+ Protesting 
+
+ Resigning 
+
+ Time Outs 
+
+ Changing Office Hours 
+
+ Changing Your E-MAIL Address 
+
+ New seat assignment method 
+
+ Starting a Round 
+
+ Status Report 
+
+ Tournament Standings 
+
+ Reminders 
+
+ Table Talk 
+
+Nicknames 
+
+-->
+ Mail Management 
+
+ Showdowns From Other Tables 
+
+ Getting Help 
+
+ Other Notes On Syntax 
+
+ Do's and Don'ts 
+
+ Antes and Blinds 
+
+ Other Poker Rules 
+
+ Example Status Message 
+
+The Basics
+
+This section explains all you need to know to play poker by
+e-mail. However, by reading the entire manual you will be able to
+customize the dealer's behavior to suit your own taste, and, more
+importantly, you will be able to contribute to a quickly moving game.
+
+You communicate with the dealer by sending e-mail to a
+predetermined e-mail address. Your messages may contain bets as well
+as commands to control the amount of mail you will receive,
+vacations, etc. The server will take care of all administrative
+details, such as dealing cards, announcing actions, handling
+showdowns, computing winning hands, awarding money, shuffling the
+deck, and so on until the tournament is over. You just play your hand
+and read your mail. 
+
+Betting: In its most basic form, betting goes as follows:
+when it is your turn to bet, send a message with the dollar amount
+you want to bet. You must have a $-sign in column 1 followed by the
+amount, and no other text is allowed on that line, (ie. none of the
+switches discussed below), eg. 
+
+    $0
+The above will check or fold, whatever the case may be. The dealer
+will compute whether your bet constitutes a call or raise, eg. if it
+is $200 to you and you want to raise $300 send in a $500 bet. 
+
+Your USER-ID
+
+The dealer identifies incoming mail not by looking at the "From:"
+address (which can change in strange and unpredictable ways), but
+through a User-ID, or ID for short. Each player is assigned a
+six-character ID at the beginning of the tournament, and it remains
+the same for that player for the duration of the tournament. 
+
+All private messages from the dealer to a player contain that
+player's ID in the subject line, for example: 
+
+Subject: Holdem game (ID=casino): your cards
+When sending mail to the dealer, you must include the string
+ID=<yourid> in the subject line. Other text may also be in the
+Subject line. If your mailer includes the old Subject line when you
+"reply" to a message, all you need to do is reply to a
+message that contains your ID and all will be well. Alternatively,
+you could put the ID by itself: 
+
+Subject: ID=casino
+No spaces are allowed between the = sign and the ID. The ID is always
+in lowercase, and you must also supply it that way. 
+
+Of course, messages that go to multiple players do not contain
+anyone's ID on the Subject line. If you "reply" to such a
+message you must supply your ID yourself by editing the Subject line.
+
+Note: if you inadvertently cc the other players on one of your
+moves, your ID will be revealed to the rest of the table. This is not
+a good idea. While opportunities for cheating are limited (and will
+be detected since all mail is logged), you should request a new ID
+from the floorman in such a case. You cannot change your own ID. 
+
+If you lose your ID, write to the floorman, or wait for the
+reminder message that it is your turn to bet, it will contain your
+ID. 
+
+Advance(d)
+Betting
+
+It is possible, and highly recommended, to post bets in advance.
+Since the dealer is the only account to receive your mail, no one
+will find out about your advance bets. By using this feature you will
+be able to greatly speed up the game. 
+
+The following commands are available for advance bets: 
+
+	BET $x 
+
+	Equivalent to MAKE $x. When it is your turn to bet, BET $x is
+	equivalent to plain $x. BET $x is useful there because it allows
+	switches whereas $x does not. 
+
+	CALL $x 
+
+	Call any bet up to $x, fold otherwise. Note that CALL $0 will check
+	or fold when it is your turn. Recommended highly when after looking
+	at your hole cards you decide you will fold no matter what, but also
+	useful in later betting rounds. 
+
+	CALL * 
+
+	Call any amount. Equivalent to RAISE $0 (see below). 
+
+	ELSE 
+
+	See below under Advance
+	Betting for Experts 
+
+	FOLD 
+
+	Fold at the earliest opportunity. The FOLD command will bet $0 until
+	you fold or the hand is over. (Equivalent to CALL/S $0; see next
+	section for explanation of /S switch). 
+
+	IF 
+
+	See below under Advance
+	Betting for Experts 
+
+	MAKE $x 
+
+	Attempt to BET $x. 
+
+This command attempts to place $x
+	into the pot, in addition to any previous action for the round. It
+	does not necessarily "make" the total action $x. Total
+	action will be $x plus any previous action.
+
+For
+	example during pre-flop play, you are in early position and have
+	called the big blind of $100. Someone in late position raises to
+	$1000. If you want to "make" the total action $2000, you
+	would use MAKE $1900 since you have already placed $100 the pot.
+	MAKE $2000 would make the total action $2100 (your previous $100
+	plus an additional $2000).
+
+For another example during
+	post-flop play, if you send in MAKE $1000 and by the time the action
+	reaches you it is $400 to you you end up making a $600 raise. If it
+	was $1000 to you you would be calling. If it was checked/$0 to you,
+	you would bet $1000. If it was more than $1000 to you, your action
+	would fail and you would be getting mail saying that you need to
+	make another bet. Similarly if your raise wasn't large enough.
+
+The
+	MAKE command is one of the most useful advance betting features; try
+	using it whenever you can. After you get your cards for a new hand
+	and the big blind is, say, $200, MAKE $200 is a way of saying "call
+	when it's only $200 to me, but don't do anything if someone has
+	raised." If you had put in a $100 small blind you would say
+	MAKE $100 to do the same thing. If you were the big blind, MAKE $0
+	(or CHECK) would be appropriate. 
+
+	RAISE $x 
+
+	Attempt to raise $x. If the raise isn't large enough you'll get an
+	error message and a chance to make another bet. Note that RAISE $0
+	will call any bet. Use with care when playing no-limit. 
+
+	POT 
+
+	Bet, or call and raise, the pot. If you don't have that much, go all
+	in. This works in no-limit as well. 
+
+	CHECK 
+
+	Equivalent to MAKE $0. You intend to check, but if someone bets, you
+	get a chance to make a different decision. 
+
+	JAM 
+
+	Bet the maximum amount allowed, eg. the pot in
+	Pot Limit, or your entire bankroll in No Limit. 
+
+	UNDO 
+
+	Undo any advance action. New for WRGPT8:Also undoes any
+	PROTEST. 
+
+It is not necessary to use these features out of turn, ie. you can
+also use them when it is your turn to bet. 
+
+You can change your mind about these bets; just send in a new bet
+and it will override the existing one (provided your mail gets there
+in time of course). 
+
+Sticky Betting
+
+By default, all the commands described above are executed once.
+Eg, when you post an advance CALL $0 intending to fold as soon as
+possible, you may still survive the first round, eg. because you were
+the big blind - the advance action translated into a check. Now the
+flop comes and you will need to make another $0 bet to fold. For such
+purposes, the concept of "sticky" actions was invented.
+When an action is sticky, it applies for the duration of the current
+hand, then is erased before the next hand. 
+
+The syntax is a /S appended to the specific command. Examples: 
+
+    CALL/S $0
+Keep betting $0, ie. fold at the earliest opportunity. The command
+FOLD does the same thing. Note that FOLD/S is redundant. 
+
+    POT/S
+Bet or raise the pot at every opportunity. 
+
+Advance
+Betting for Experts
+
+This section describes the full set of powerful conditional
+advance betting features that are available. In short, an
+if-then-else style command language is available, where the
+conditions to be tested can be quite complex. This feature is
+designed to be powerful enough to cover nearly all betting
+situations, making it possible to cover almost any situation with an
+advance move. 
+
+The general form of an advance conditional action looks like: 
+
+    IF/<conditions> <action>
+   IF/<conditions> <action>
+   ...
+   ELSE <action>
+The first IF line for which all conditions evaluate to TRUE will
+cause its action to be executed. There is a maximum of 8 IF lines per
+advance action. If no IF lines match then the ELSE part is executed.
+The ELSE part is optional. 
+
+In other words, the above is equivalent to 
+
+    IF <conditions> THEN <action>
+   ELSIF <conditions> THEN <action>
+   ...
+   ELSE <action>
+   ENDIF
+The <conditions> can take the following form, best illustrated
+by an example: 
+
+    IF/P<=2500/B<=500/N=3/I:3/O:2 POT
+The above command means: if the pot is at most $2500, and the bet to
+me is at most $500, and there are 3 players in the pot, and player 3
+is in, and player 2 is out, then bet (or call and raise) the pot. 
+
+Conditions are one of: 
+
+	Pot Size; the size of the pot when
+	the action reaches me; specified by using /P<rel> amount, eg.
+	/P=1000, /P<=2000, etc. 
+
+	Bet Size; the size of the bet (the
+	amount I have to call) when the action reaches me; specified by
+	using /B<rel> amount, eg. /B=1000, /B>=1000, etc. 
+
+	Number of Players; this count
+	always includes yourself and answers the question "how many
+	players are in the pot when the action reaches me"; specified
+	through /N<rel>number, eg. /N>4 or /N<=3, etc. 
+
+	Players In the Pot; places a
+	condition on players that must be in the pot (ie. not folded);
+	specified through /I:player-number, eg. /I:1 or /I:5/I:6. Note two
+	important things: the use of : instead of = and the way to specify
+	multiple values for this switch; the latter example is a condition
+	that both player 5 and 6 must be in the pot. 
+
+	Players Not In the Pot; places a
+	condition on players that must be out of the pot (ie. folded);
+	specified through /O:player-number, eg. /O:1 or /O:5/O:6. Note two
+	important things: the use of : instead of = and the way to specify
+	multiple values for this switch; the latter example is a condition
+	that both player 5 and 6 must be folded. 
+
+	Betting Round; /F places a condition on the betting round for
+	which your action will be valid. For more information see
+	Restricting
+	your Action to a Certain Betting Round below. 
+
+Expressions are one of: 
+
+	= (equal) 
+
+	# (not equal) 
+
+	> (greater) 
+
+	>=(greater or equal) 
+
+	< (less) 
+
+	<=(less or equal) 
+
+Here are some examples of using expert-style advance betting: 
+
+    IF/N=2/I:1 JAM
+If there are only 2 players in the pot, and player 1 is in, then JAM.
+In other words, if it's down to just me and player 1, JAM. 
+
+    IF/B=0 POT
+   IF/B<=1000 CALL *
+If checked to me, bet the pot. Else, call any bet up to $1000. If the
+bet is more do nothing. 
+
+The simple form "$x" is not allowed as an action guarded
+by IF or ELSE, ie. the following is illegal: 
+
+    IF/N=2 $100
+This would be illegal even if it were that player's turn to act. 
+
+Effect of other switches on IF commands: 
+
+The /S switch may be applied to individual actions within the IF
+construct, or to the IF as a whole. In the latter case, for the /S
+switch to have the desired effect it must appear on the first IF, in
+case multiple IF's are used. 
+
+Examples: 
+
+    IF/N=2 CALL/S *
+   IF/N=3 CALL *
+If only two players are left, call anything to the end. If three
+players are left call anything, but just once. 
+
+    IF/S/O:6 JAM
+>From now until the end, when player 6 is out, jam. 
+
+Other switches (/H, /Q and /R), when appearing either on the IF
+itself or on any of the commands inside the IF's, are always promoted
+to the "outer level". For example, 
+
+    IF/N=4 FOLD/R
+   IF/N=3 CALL *
+   IF/N=2 JAM
+The /R switch implies "REVEAL" (see Revealing
+Folded Hands) and always takes effect even if the first IF
+arm is not the one actually selected. 
+
+Quiet Mode
+
+Normally, the dealer will confirm advance moves with a reply
+message. This behavior can be suppressed using the /Q switch on
+advance commands, eg. 
+
+    FOLD/Q
+Note: the /Q switch is not allowed on UNDO. 
+
+Restricting Your Action to the Current Hand
+
+Sometimes it is useful to be able to specify that your action
+should only apply to the current hand. While usually this situation
+takes care of itself, there are a few pitfalls. For instance, on the
+last betting round you intend to check-raise. So you check and then
+send in an advance JAM. Meanwhile, everyone else has also checked,
+the hand finishes, a new hand is dealt, and finally, your JAM
+arrives, which is now applied to the next hand. To avoid this
+situation, use the /H switch, as follows: 
+
+    JAM/H=99
+This ensures that the JAM will only take effect during hand 99. If by
+the time the command is received the hand number is 100, the JAM is
+ignored. Note: you cannot use the /H comand to specify an action for
+a future hand. 
+
+HINT: if your mail connection is less than reliable, always
+use /H. It can prevent nasty surprises. 
+
+Restricting your Action to a Certain Betting Round
+
+This feature allows advance actions in situations where it would
+otherwise be impossible or at least very dangerous to do so. You can
+restrict your advance action to be valid only for a certain betting
+round. When the action reaches you, your advance actions takes affect
+only if the then current betting round matches the one you specified.
+
+This is mostly useful in a situation such as the following.
+Suppose you are first to act after the big blind. You call, and
+everyone else either calls or folds, except the big blind who didn't
+put in an advance action. Should he check, you will see a flop; but
+if he bets, you need to decide whether to call or not. Typically, you
+might be able to decide the latter in advance but not the former.
+That's where this feature comes in: you want to say "call X if
+betting round is pre-flop". The syntax is: 
+
+IF/F=1 CALL $x
+where 
+
+F = 1      pre-flop
+F = 2   post-flop
+F = 3   turn (4th card)
+F = 4   river (5th and final card)
+An important rule to remember is that advance bets "expire"
+immediately after your next bet. Ie. if you have an advance action
+in, the dealer will attempt to apply it the first time it's your turn
+to bet; whether or not the action actually "fires", it is
+immediately discarded (unless of course you specify "sticky",
+but even that is erased if the first attempt to use it fails). 
+
+This means that if you do someting like this pre-flop: 
+
+IF/F=4 JAM
+intending to jam on the river, it will not work since your next
+"real" action will wipe it out. 
+
+Revealing
+Folded Hands
+
+In some cases players may want to "reveal" their hand
+even it would normally not be shown. This feature can be turned on by
+using the /R switch on any of the advance betting commands, eg. 
+
+    FOLD/R
+An UNDO command will erase the intent to reveal your hand. Needless
+to say, the default is to not reveal folded hands. 
+
+Vacations
+
+The dealer enforces certain deadlines for making your bets (more
+on this later). When you are going to be out of town for a longer
+period of time, it is best to use the vacation features described in
+this section. 
+
+While you are on vacation, the dealer will post antes and blinds
+for you as necessary. When the action gets to you you will bet $0 at
+all times, ie. check or fold. 
+
+To go on vacation, send a one liner with the command GONE
+"until-string", where the argument "until-string"
+indicates when you expect to be back. The first six characters of
+this string will be included in every status report that the dealer
+sends out. It is not interpreted and there is no penalty for
+returning earlier or later; it's intended strictly as a courtesy to
+the other players. 
+
+Example: 
+
+    GONE 13 Sep
+To indicate that you are coming back from vacation, send a one-liner
+with the command BACK. 
+
+When a player goes on vacation, if it was also his turn to bet a
+$0 bet will automatically be made. Vacations are announced to the
+rest of the table at the end of a hand. They are not announced
+immediately to prevent people from "going on vacation" with
+no intention of really leaving town, but rather with the plan to come
+back during the same hand when no one expects it. However, a player
+on vacation may come BACK at any time during the hand, and if he
+hasn't already been folded he has the right to play his hand. 
+
+You may infer correctly from the above, that sticky actions take
+precedence over vacations. Unless of course your sticky action
+translates into an insufficient bet (possible with MAKE or RAISE), in
+which case you will be folded. 
+
+In a given tournament, there may be limits imposed on the number
+of hands that can be played per day while someone is on vacation, to
+avoid the situation where a small number of people quickly eliminate
+a vacationed player by making him use up all his money in antes and
+blinds. 
+
+You cannot win a contested hand while on vacation. Exception: you
+can win the hand during which you go on vacation. 
+
+Protesting
+
+If for some reason you feel that eg. due to a software error you
+have been slighted, you may protest the game by issuing the PROTEST
+command. This command freezes the action at your table until the
+dispute can be resolved by the floorman. Needless to say, this
+command should not be used lightly. 
+
+Any text following the line on which the PROTEST command appears
+is forwarded to the floorman. It will not be sent to the other
+players at your table; they will simply receive notification that you
+filed a protest. It is up to you to inform them of the reason why,
+but you don't need to do so. 
+
+Example: 
+
+   PROTEST
+       I timed out at 4PM, but the last message I got
+       said my timeout was scheduled for 5PM.
+You can withdraw your protest through the use of the UNDO command. 
+
+Resigning
+
+If for some reason you must resign from (quit) the game, send the
+following command: 
+
+    GONE RESIGN
+This will be treated as a special sort of vacation with no limits on
+the number of hands that can be played per day. You cannot come BACK
+after resigning from the game. 
+
+NOTE: sometimes players resign after being eliminated from the
+tournament. While harmless, this has no effect whatsoever. 
+
+Changing
+Office Hours
+
+** As of WRGPT 23, Office hours are Ten (10) hours.
+
+By default, the "work day" starts at 9AM in the timezone
+of the host machine. Each player can change the "start of day"
+using the START command. Example: 
+
+    START 12
+This command will cause your day to start at 12 Noon in the timezone
+of the host machine. The START command does not take effect until the
+NEXT hand, ie. you cannot change your schedule while a hand is in
+progress. 
+
+You can choose any value between 0 and 23 (inclusive) for your
+start of day. Only whole hours are allowed, eg. 6:30 will not work. 
+
+A WHAT command will tell you your own "start of day".
+There is no direct way to find out what the "start of day"
+for other players is. 
+
+CAUTION: it is possible to create non-contiguous office hours this
+way, due to the fact that there are no office hours on Saturday and
+Sunday in the timezone of the host machine. For example, if you use
+START 18 and the "length of day" is 9, you will only have
+six office hours on Friday (18-24); the remaining 3 hours are on the
+following Monday (0-3 AM). It does not matter that for instance,
+"START 18" implies 15:00 or earlier in your timezone. All
+calculations are done in the host machine timezone. 
+
+With the host machine typically residing in the continental US,
+players in "faraway" timezones such as Australia or New
+Zealand will have a problem if they cannot access their mail on
+Saturdays. There is currently no way for them to avoid having "office
+hours" on their Saturday. 
+
+Time Outs
+
+When it is your turn to act you have a fixed number of "office
+hours" to respond. Office hours normally run from 9AM to 6PM in
+the timezone of the host machine, Monday through Friday, but may be
+changed by individual players to suit their schedule. The following
+examples assume a 9AM starting time and a six hour timeout: 
+
+	After a bet on Tuesday, 11:15 AM
+	you have till Tuesday, 5:15 PM to respond. 
+
+	After a bet on Friday, 8:22 AM you
+	have till Friday, 3:00 PM to respond. 
+
+	After a bet on Saturday, 4:20 PM you have till Monday, 3:00
+	PM to respond. 
+
+This more complicated example assumes a 18:00 starting time and a
+six hour timeout with a 9 hour length of day (see Changing
+Office Hours): 
+
+	After a bet on Friday, 8:15 PM you have till Monday, 2:15 AM
+	to respond. 
+
+If you miss your deadline you will be put on vacation and a $0 bet
+will be entered for you. In future hands your status line will show
+"AWOL". While AWOL, you are NOT protected by the rule that
+limits the number of hands per day while someone is on vacation. 
+
+Timeouts are discouraged. However, some timeouts are unavoidable
+so you are given a generous amount of timeouts until action is taken.
+You will be removed from the tournment if you exceed allowed timeout
+limits. You can read the Timeout Policy here.
+
+NEW FOR WRGPT 23: Timeouts are now ** Four (4) ** hours instead of
+Six (6).  Office hours are now Ten (10) hours long.
+
+NEW FOR WRGPT 26: Timeouts can never be more than 24 hours so
+you must play on weekends and holidays or you will time out. 
+
+Changing
+Your E-MAIL Address
+
+The ADDR command is available to change your e-mail address.
+Example: 
+
+ADDR me@my.new.place 
+
+You will receive a confirmation message both at your old address
+and your new address. After that, mail will go only to your new
+address. Note that it is easy to add address(es) to your current
+address, eg: 
+
+ADDR current@address.com, additional@address.com 
+
+Now you will receive future mail at both addresses. 
+
+Note: it is of course up to the player to supply the correct
+address(es). In particular, the dealer does not analyze the argument
+to see if it contains syntax errors, and it does not "know"
+that the last example is a comma-separated list. It simply passes the
+entire string to the system mailer. 
+
+Seat Assignments
+
+Starting with WRGPT8, a new seat assignment algorithm is used. The
+new method is designed to be more "fair" in the sense that
+people who have spent a lot of money on blinds will get the better
+seats at the start of a new round. At the end of each round, the pool
+of surviving players is randomly assigned to new tables, as before.
+Within each table, players are assigned seats based on average cost
+per hand played so far. The player who has spent the least amount of
+money in blinds per hand becomes the big blind and the player who has
+spent the most becomes the button. At any time during the tournament,
+players can get a detailed report about the starting seat assignment
+by using the SEATLOG command. Note that during the first round of the
+tournament, this command does not generate meaningful information.
+Also note that it is still not guaranteed that you won't get the big
+blind two tables in a row. But if that happens, it is because other
+players at your table have paid even more in blinds (per hand) than
+you. Players who are resigned will automatically draw the big blind. 
+
+Starting a Round
+
+Often, a new tournament or new round will start with everybody on
+vacation. This is done because it is not always known who will be on
+vacation at the start of a tournament. Players then must send in a
+BACK command. As soon as all players have done this, or when the
+standard timeout period has expired (whichever occurs first), the
+table will start. 
+
+Status Report
+
+If you forgot your hand or deleted all the status reports from the
+dealer and you want to get an up to date picture, send the following
+message: 
+
+    WHAT
+
+Tournament
+Standings
+
+In a tournament with multiple tables, you may want to see the
+total aggregate standings of all players. To get such a listing, use:
+
+    SCORE
+Normally, this listing will not include players who have been
+eliminated. To see the full list including eliminated players, use 
+
+    SCORE/L
+You can also subscribe to a daily update of this listing. See
+Showdowns From Other Tables
+below. 
+
+Note: in case of ties, tied players are ranked in an irrelevant
+order; except that eliminated players are ranked in reverse order of
+elimination. 
+
+Reminders
+
+Periodic reminders are sent, at least twice a day, to the person
+whose turn it is to bet. 
+
+Table Talk
+
+"Table talk" is a poker term for any conversation that
+takes place at the table, but often specifically used to confuse
+other players. You can issue table talk in this game by including it
+in your mail message that contains your betting action. Table talk
+must be explicitly announced through the use of the TALK keyword.
+This command must be on a line by itself and start in column 1. As
+before, you can end table talk by using the SIG keyword. This is
+often desirable to suppress signatures that are automatically added
+by many mailers. Any line that begins with two hyphens ("--")
+also ends table talk. You are not required to announce the end of
+table talk. Example: 
+
+    $1000
+   TALK
+   I'm betting a thousand.
+Table talk may also be added to out of turn bets, and all table talk
+is shown interspersed with action in the showdown messages. 
+
+Example of the use of the SIG command: 
+
+    JAM
+   Here is a line that will not show up.
+   TALK
+   I'm going all in!  This line will show up!
+   SIG
+   This line will not show up!
+   Neither will this one.
+Limitations: 
+
+(1) table talk lines longer than 80 characters are truncated to 80
+characters. There is a limit of 31 lines of table talk for advance
+bets (additional lines are ignored); there is no limit on the number
+of lines when it is your turn to bet. 
+
+(2) There is no way to combine table talk with an IF bet. 
+
+(3) The dealer applies certain filters to table talk, eg. it tries
+to suppress "quoted" messages which often occur when people
+include the entire message they're replying to. Prolonged abuse of
+the table talk feature may result in a player's table talk capability
+being shut off (eg. when someone always includes a lengthy signature
+without applying the SIG command, or when players repeatedly include
+commercial messages). 
+
+Personal Information
+
+This is new with WRGPT8 and takes the place of the ill-fated
+"biographical information" which was collected in past
+years without being made easily accessible. At the same, this feature
+reduces the risk of being exposed to spam by removing your email
+address from the long score list.
+You may now supply short biographical information using the command 
+
+    ASL 
+ASL stands for "Age Sex Location" and an example might be 
+
+    ASL 34/M/New York
+Of course use of the ASL command is optional. If you prefer, you can
+use your email address, or a URL, for instance if you have a home
+page on the web that you want people to refer to. Until you use the
+ASL command, your info will show up as "asl unknown" in the
+score listings. 
+
+Mail Management
+
+By default, you will get every action mailed to you, including an
+updated status report. There are ways to customize this behavior,
+using the READ command. The following options exist: 
+
+	READ NONE 
+
+	Don't get any more mail, ever. This option is intended for use by
+	players who are eliminated and don't want to receive any more mail. 
+
+	READ SUNDAY 
+
+	Receive only showdown messages. Intended for players who are
+	eliminated and want continued coverage of the showdowns. It can also
+	be used while on vacation. 
+
+	READ PICKY 
+
+	In this mode, you will receive only "significant" mail.
+	You get a message only if you're not folded, and one of the
+	following applies: 
+
+	Someone raises 
+
+	Cards are dealt or flopped 
+
+	It's your turn to bet 
+
+	Regardless of whether you folded,
+	you will always receive mail when: 
+
+	A new hand is dealt 
+
+	A showdown occurs (or the hand is over without a showdown) 
+
+	READ JUSTME 
+
+	Receive mail only while still active in the hand; with this option
+	you will stop getting mail after you fold; mail resumes with (and
+	including) the showdown of the current hand. 
+
+	READ ALWAYS 
+
+	Get all mail (default) 
+
+Showdowns
+From Other Tables
+
+The only way to see what happens at other tables is to join the
+"rail". Instructions for subscribing and unsubscribing to
+the rail will be published at the start of the tournament. Once on
+the rail, you will receive every showdown message from all other
+tables, as well as nightly "score" messages with the grand
+total tournament standings. 
+
+Getting Help
+
+A summary of commands can be obtained by sending the one-liner 
+
+    HELP
+to the dealer. 
+
+The latest version of this manual can be obtained by sending the
+one-liner 
+
+    MANUAL
+The FAQ list can be obtained by sending the one-liner 
+
+    FAQ
+
+Other Notes
+On Syntax
+
+Syntax for bets and commands to the dealer are case in-sensitive. 
+
+All commands must start on column 1, and use only a single line. 
+
+Only one command per message (except for SIG command.) 
+
+Do's and Don'ts
+
+	Don't send any commands to
+	"floorman" or "daemon"; the correct address for
+	the poker server is "dealer". If you have a mailer which
+	ignores the Reply-To field, you'll have to fix the To: address
+	yourself. floorman will not forward misdirected mail. 
+
+	Do send the dealer plain text,
+	un-encoded email. Sometimes the dealer can process
+	HTML/formatted/encoded email, but that is not guaranteed, so for
+	best results, send plain text.
+
+	Don't include the entire message
+	you're replying to. 
+
+	Do use the SIG keyword to suppress
+	signatures. 
+
+	Do include your table number somewhere in your message when
+	sending mail to floorman
+
+Antes and Blinds
+
+Antes and blinds go up periodically. They may go up either after
+each multiple of N hands, or after each multiple of N days. This will
+be announced at the start of the tournament. Also periodically, seats
+are redrawn. 
+
+Blinds are always live. 
+
+Other Poker Rules
+
+In case of split pots, odd chips go the first player to the left
+of the dealer. 
+
+If the player with the big blind is eliminated there will be no
+small blind. 
+
+In no limit, to qualify as a raise, the raise must be at least the
+size of the last bet or raise. The minimum bet is the size of the big
+blind. 
+
+Other rules to be determined per tournament. 
+
+Example
+Status Message
+
+Following is an example status message from the dealer 
+
+To: X1, X3, X2, X4
+From: dealer
+Subject: Broadcast Message 10008 [a1] (-> X2)
+
+! Hand Number 2
+! Day Number 1
+
+! X4 raises $4950 and is all in
+! X5 folds
+! X1 calls - side pot
+! X3 is on vacation and folds
+! X2 is next to act, $4950 to call.
+! Unlimited raises
+! Pot size: $10050
+! Next timeout set for Wed, Aug 26 11:02 EDT
+! Current board: ? ? ? ? ?
++-+------------+--------+--------+------+----+--------+
+|#|   Name     |Bankroll| Action |Status|Pot#|Pot Size|
++-+------------+--------+--------+------+----+--------+
+1|D  X1       |      0 |   4975 |all-in|  2 |   9850 |
+2|V  X3       |   4925 |     25 |Aug 30|    |        |
+3|>  X2       |   5025 |     50 |      |  3 |    175 |
+4|   X4       |      0 |   5000 |all-in|  1 |     25 |
+5|   X5       |   5000 |      0 |folded|    |        |
++-+------------+--------+--------+------+----+--------+
+
+Your automated Holdem dealer
+
+Explanatory notes: 
+
+	The first column shows seat
+	numbers; largely ignorable. 
+
+	The Name field, besides players'
+	names, can show various other symbols. The D stands for Dealer; a V
+	indicates Vacation; note that player X3 is on vacation until
+	(approximately) Aug 30. The arrow (>) indicates who is next to
+	act. The next-to-act information is also indicated in the subject
+	line. 
+
+	The Bankroll field indicates each
+	player's bankroll, ie. how much money they have in front of them. 
+
+	The Action field shows how much a
+	player has invested in the pot. 
+
+	The Status field is used for a
+	variety of purposes; some of them are shown in the example and
+	should be self-explanatory. 
+
+	The last two columns are usually
+	blank. They are non-blank when there are side pots, as in this case.
+	The column Pot# indicates which side pot a player is involved in. If
+	a player is in side pot N , he is automatically also in every side
+	pot > N . Thus, X4 is in side pots 1, 2 and 3. Side pot 1 exists
+	because X4 has $25 uncalled money in the pot. Should X2 fold, the
+	$25 will be returned to X4. Player X1 is in pots 2 and 3, and player
+	3 is only in pot 3, so far. 
+
+	The last column indicates the amount of money in the
+	(smallest, ie. fewest number of players) side pot that the player is
+	in. 
+

@@ -53,6 +53,8 @@ def parse_event(text: str, ts: datetime | None = None) -> HandEvent | None:
         return _ev(EventKind.BLIND, text, ts, player=m["p"], amount=_money(m[2]))
     if m := re.match(rf"^{_NAME} is on vacation and folds$", text):
         return _ev(EventKind.VACATION_FOLD, text, ts, player=m["p"])
+    if m := re.match(rf"^{_NAME} is back from vacation$", text):
+        return _ev(EventKind.BACK_FROM_VACATION, text, ts, player=m["p"])
     if m := re.match(rf"^{_NAME} folds$", text):
         return _ev(EventKind.FOLD, text, ts, player=m["p"])
     if m := re.match(rf"^{_NAME} checks$", text):
@@ -75,7 +77,9 @@ def parse_event(text: str, ts: datetime | None = None) -> HandEvent | None:
         return _ev(EventKind.PLAYERS_LEFT, text, ts, amount=int(m[1]))
     if m := re.match(r"^\w+ cards?:\s*(.*)$", text):
         return _ev(EventKind.BOARD_CARDS, text, ts, cards=_cards(m[1]))
-    if m := re.match(r"^Hand over, current board is:\s*(.*)$", text):
+    if text == "Hand over, no showdown":
+        return _ev(EventKind.HAND_OVER, text, ts)
+    if m := re.match(r"^(?:Hand over, current|Current) board is:\s*(.*)$", text):
         return _ev(EventKind.SHOWDOWN_BOARD, text, ts, cards=_cards(m[1]))
     if m := re.match(rf"^{_NAME}\s+has:\s*(.*)$", text):
         return _ev(EventKind.SHOWS, text, ts, player=m["p"], cards=_cards(m[2]))

@@ -4,7 +4,7 @@ import pytest
 
 from poker.parsing import EmailKind, MyReply, PrivateState, parse_email
 
-FIX = Path(__file__).parent / "fixtures"
+FIX = Path(__file__).parent / "fixtures" / "hand_2"
 
 
 def _kind(path):

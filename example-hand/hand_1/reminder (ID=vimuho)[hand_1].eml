@@ -1,0 +1,71 @@
+Delivered-To: sefklon@gmail.com
+Received: by 2002:a05:6a10:8146:b0:75b:ec3:beae with SMTP id l6csp1134577pxa;
+        Tue, 13 Oct 2026 14:30:18 -0700 (PDT)
+X-Received: by 2002:a05:620a:2b87:b0:93e:c12c:fbc8 with SMTP id af79cd13be357-93ec12d06d0mr2266670385a.68.1791927018553;
+        Tue, 13 Oct 2026 14:30:18 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1791927018; cv=none;
+        d=google.com; s=arc-20260327;
+        b=IndCvJSEtk4lGVQeG/DWXaMBKPHFGpqbNIWZkY4EeR/qmV4h80YldAHEkDWskeSAqG
+         nrB4YNLSmLMm4Xq2hhdFR+rVjY8sZuRsVSF/YcxJWKQ2asFxz0xkXYF8Ufn3yavrZkr8
+         ptJi/sBq2w3/lnuwsMJkJUD2Lv1I1mToMggeRLUnMuPUzUxfSU71yC8Cd0z1Nyqof2S3
+         uulfVQe4Df8oS0QGDr3I+2ggv0tA6BK9sJNEyNNKYa5sQG9N0YG0q8E8Z96yulfuWjWS
+         XeROWPvoc/Kt7vmDr6yeXlXb/TuK95KyFqRJT+A5wk4EbKzDEKSGnWlcP0uJiG8Gvp/i
+         E2ow==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=date:message-id:subject:from:reply-to:to:dkim-signature;
+        bh=4L3dnNVOPHVq1UJJoLpdrj76O7Pa/qWTDs/HrjNyVXU=;
+        fh=StgVNstZVm6CA/jWzog2GqNh+VGFtKDwql9+cOAjdD0=;
+        b=fC5XuCpVu4qoyuMrSdNN9esPhIt2Jth5ann+t00BMpVZf0VFME10lgpgTMN0XntsW8
+         zet3yTY3q3xXN4tLMOx3zGZ7CSOqaDJOO3S0fLk5L5F6YR9rD46A+itaWg0cWNzkPHrW
+         k0GbqHuZ+pm0JgUTQChMUkc4tbhiuMnIQwhjrdc33W3LZp23pCqogm0+OSQepnFPL4Sc
+         Vp6KWNZXPC0SWVZHjZ6GxwkvoOUvussaBiC/TqkCjpW+Ny6nAc47Ul+9BwBkc6ZLSk3M
+         67w0RkCuYSN94GsnOLcFSOXulCjtqoHvvsKcvDM6ujQ+e8SREBG4ZnbKHmoTzC35oxOl
+         XE3Q==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@wrgpt.org header.s=mail._domainkey header.b=ErGnpdup;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Return-Path: <floorman@wrgpt.org>
+Received: from presto.wrgpt.org (wrgpt.org. [74.208.146.72])
+        by mx.google.com with ESMTP id af79cd13be357-93ef50ba0d9si300181985a.260.2026.10.13.14.30.18
+        for <sefklon@gmail.com>;
+        Tue, 13 Oct 2026 14:30:18 -0700 (PDT)
+Received-SPF: pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) client-ip=74.208.146.72;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@wrgpt.org header.s=mail._domainkey header.b=ErGnpdup;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=wrgpt.org;
+	s=mail._domainkey; t=1791927018;
+	bh=3S89h0bAfmEw6PCM3QRXjlguRTx6bubcWauRFLUwmxE=;
+	h=To:Reply-To:From:Subject:Date:From;
+	b=ErGnpdupoLFy0G9qP1GJiog8QxveoPSWP+UNzlXQdkTTHgMNenTi6K8xC8ea+idpF
+	 vOIafk5xvfPsvQy+nkAVV6yXEzPJEYr6Us04XpBxaJ4Hd5SMc/VVzoOhFSX3W0xCvP
+	 aFy4pzZlpQH/kcaSdkqWWeSGCP1doaIjPQbIs11awApzO0NF88PX3GgS2rth9aWPSq
+	 FDP/HvLiCTMep8grlKiBieEZ/j9JZpEe5sjSmdoCSy/h+3vDaPOE4QpIDCgFgCr5nM
+	 WmhWvbP+3RbhxTz16ZP4FLLDNP5KE5Ik68bCN6QK9GaJIz4tFA1Y7ym1Mg8gngBIs/
+	 nFVVEP0KMsxow==
+Received: by presto.wrgpt.org (Postfix, from userid 1000)
+	id 3DD1123A383; Tue, 13 Oct 2026 14:30:18 -0700 (PDT)
+To: sefklon@gmail.com
+Reply-To: dealer@wrgpt.org
+From: dealer@wrgpt.org
+Subject: reminder (ID=vimuho)[hand:1]
+Message-Id: <20261013213018.3DD1123A383@presto.wrgpt.org>
+Date: Tue, 13 Oct 2026 14:30:18 -0700 (PDT)
+
+! Table b17, Hand 1, Day 2
+
+! Reminder: Your turn to bet today.
+! Next timeout set for Wed, 14 Oct 2026 08:30 PDT
+! Your hole cards are: Jc Ad
+! You are next to act, $200 to call
+! Pot size: $300
+! Board: ? ? ? ? ? 
+! Your START time is: 7
+
+
+This table's current status can be found at https://hands.wrgpt.org/b/b17.html
+
+Your automated Holdem dealer

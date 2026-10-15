@@ -45,6 +45,7 @@ class EventKind(enum.StrEnum):
     ANTE = "ante"  # "No ante" (amount None) or an ante line
     BLIND = "blind"  # "Two_Jacks blinds $100"
     VACATION_FOLD = "vacation_fold"  # "Options Dee is on vacation and folds"
+    BACK_FROM_VACATION = "back_from_vacation"  # "RiverRat is back from vacation"
     FOLD = "fold"
     CHECK = "check"
     CALL = "call"
@@ -54,7 +55,8 @@ class EventKind(enum.StrEnum):
     POT_RIGHT = "pot_right"  # "Pot right ($3450), flopping/dealing/drawing cards"; amount = pot
     PLAYERS_LEFT = "players_left"  # "5 players"; amount = count
     BOARD_CARDS = "board_cards"  # "Flopped cards: As 6c Th" / "Flopped card: 4c"; cards
-    SHOWDOWN_BOARD = "showdown_board"  # "Hand over, current board is: ..."; cards
+    HAND_OVER = "hand_over"  # "Hand over, no showdown"
+    SHOWDOWN_BOARD = "showdown_board"  # "Hand over, current board is: ..." / "Current board is: ..."; cards
     SHOWS = "shows"  # "Bryan Currie has: Kh Jh"; player, cards
     WINS = "wins"  # "Capparella wins $14,650 (net $9100) with One Pair (...)"; amount, net, text
     TIMED_OUT = "timed_out"  # "Aardvark timed out during this hand"

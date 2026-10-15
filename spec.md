@@ -49,3 +49,9 @@ Presentation: always show every explanation. When they disagree, highlight that 
 - Keep the full hand history.
 - Opponent stats: maybe, later.
 - Single table only.
+
+### Email format notes
+- Broadcast sequence numbers (`[b17.10014]`) are consecutive per table, across hands. A gap means a broadcast never arrived; hand 2 lost 10016 and 10025, probably during the Gmail delivery problems the dealer reported on 10/14. Every broadcast carries a full snapshot (pot, board, seat table, next to act), so current state stays correct even when one is lost. Only the action log has holes, and the end-of-hand history fills them. The UI flags hands with missing broadcasts. If this keeps happening, the `WHAT` command or hands.wrgpt.org can be used to recover.
+- My replies are dealer commands, often sent in advance (`CALL *`, `MAKE $x`, `IF/B<=500 CALL *`, sticky `/S`, `/H=<hand>`). They go to dealer@wrgpt.org with `ID=<myid>` in the subject. The full syntax is in [docs/wrgpt-manual.txt][manual], fetched 2026-10-15.
+
+[manual]: docs/wrgpt-manual.txt

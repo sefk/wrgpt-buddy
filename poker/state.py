@@ -61,6 +61,8 @@ def _make_actions(hand, raw, events, start_round, order_base):
 
 def _apply_broadcast(raw: RawEmail, b: Broadcast) -> None:
     hand = _get_hand(b.table, b.hand_number, b.status_url)
+    if b.sequence not in hand.sequences:
+        hand.sequences = sorted([*hand.sequences, b.sequence])
 
     # --- action log ---
     if b.history:

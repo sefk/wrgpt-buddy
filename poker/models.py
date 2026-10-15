@@ -57,6 +57,9 @@ class Hand(models.Model):
     last_sequence = models.IntegerField(default=-1)
     has_history = models.BooleanField(default=False)
     winner = models.TextField(blank=True)
+    sequences = models.JSONField(
+        default=list, blank=True, help_text="broadcast sequence numbers received, sorted"
+    )
 
     class Meta:
         unique_together = [("table", "number")]
@@ -64,6 +67,22 @@ class Hand(models.Model):
 
     def __str__(self):
         return f"{self.table.name} hand {self.number}"
+
+    def missing_sequences(self) -> list[int]:
+        """Broadcasts the dealer sent for this hand that never arrived.
+
+        Sequence numbers are consecutive per table across hands, so gaps inside
+        this hand's range are lost mail. A gap before this hand's first broadcast
+        counts too when the previous hand is known.
+        """
+        if not self.sequences:
+            return []
+        lo, hi = self.sequences[0], self.sequences[-1]
+        prev = Hand.objects.filter(table=self.table, number=self.number - 1).first()
+        if prev and prev.sequences:
+            lo = prev.sequences[-1] + 1
+        seen = set(self.sequences)
+        return [s for s in range(lo, hi) if s not in seen]
 
 
 class Seat(models.Model):
