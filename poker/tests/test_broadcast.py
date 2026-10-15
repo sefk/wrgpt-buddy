@@ -210,3 +210,47 @@ def test_no_showdown_lines(text, kind):
         assert ev.player == "RiverRat"
     if kind == EventKind.SHOWDOWN_BOARD:
         assert ev.cards == ()
+
+
+def test_all_in_suffix_keeps_action_kind():
+    from poker.parsing.broadcast import parse_event
+
+    ev = parse_event("sefk bets $63,500 and is all in")
+    assert (ev.kind, ev.player, ev.amount, ev.all_in) == (EventKind.BET, "sefk", 63500, True)
+    assert ev.text == "sefk bets $63,500 and is all in"
+    ev = parse_event("Jim Anderson calls and is all in")
+    assert (ev.kind, ev.all_in) == (EventKind.CALL, True)
+
+
+def test_player_leaving_table():
+    from poker.parsing.broadcast import parse_event
+
+    ev = parse_event("Player leaving table: Andy Bloch")
+    assert (ev.kind, ev.player) == (EventKind.PLAYER_LEFT, "Andy Bloch")
+
+
+TALK_BODY = """! Table b17, Hand 4, Day 4
+
+! Capparella folds
+_____________________________________________________________________________
+
+% Sorry about the delays. My BET, RAISE, and CALL commands are not registe
+! -- RiverRat --
+_____________________________________________________________________________
+
+! RiverRat folds
+! sefk is next to act, $200 to call
+! Pot size: $300
+! Betting round: 1
+! Board: ? ? ? ? ?
+"""
+
+
+def test_table_talk_attaches_to_signature():
+    b = parse_broadcast("[b17.10042][hand:4] Holdem Game Broadcast Message(-> sefk)", TALK_BODY)
+    kinds = [e.kind for e in b.events]
+    assert kinds == [EventKind.FOLD, EventKind.TABLE_TALK, EventKind.FOLD]
+    talk = b.events[1]
+    assert talk.player == "RiverRat"
+    assert talk.text.startswith("Sorry about the delays.")
+    assert b.next_to_act == "sefk" and b.to_call == 200

@@ -168,3 +168,30 @@ def test_rebuild_all():
     snap = snapshot()
     state.rebuild_all(parse=fake)
     assert snapshot() == snap and Hand.objects.get().pot == 999
+
+
+def test_finished_hand_stays_finished_after_stray_broadcast():
+    from poker.parsing.types import Broadcast, EventKind, HandEvent
+
+    def bc(seq, over, events=()):
+        return Broadcast(
+            table="a31", hand_number=36, day=24, sequence=seq, addressed_to=None,
+            events=tuple(events), history=(), next_to_act=None, to_call=None, pot=None,
+            next_timeout=None, betting_round=None, board=None, seats=(), final_seats=(),
+            hand_over=over,
+        )
+
+    from poker.models import Hand, RawEmail
+    from poker import state
+    from poker.parsing.types import EmailKind, EmailMeta, ParsedEmail
+
+    def apply(seq, over, events=()):
+        raw = RawEmail.objects.create(message_id=f"<{seq}>", raw=b"")
+        meta = EmailMeta(f"<{seq}>", "", "dealer@wrgpt.org", (), None, None, EmailKind.BROADCAST)
+        state.apply(raw, ParsedEmail(meta, bc(seq, over, events)))
+
+    win = HandEvent(EventKind.WINS, "sefk wins $89,700 (net $16,000)", player="sefk", amount=89700)
+    apply(10393, True, [win])
+    apply(10394, False, [HandEvent(EventKind.OTHER, "Player leaving table: Jim Anderson")])
+    h = Hand.objects.get(table__name="a31", number=36)
+    assert h.is_over and h.last_sequence == 10394

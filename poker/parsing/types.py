@@ -62,6 +62,8 @@ class EventKind(enum.StrEnum):
     SHOWS = "shows"  # "Bryan Currie has: Kh Jh"; player, cards
     WINS = "wins"  # "Capparella wins $14,650 (net $9100) with One Pair (...)"; amount, net, text
     TIMED_OUT = "timed_out"  # "Aardvark timed out during this hand"
+    PLAYER_LEFT = "player_left"  # "Player leaving table: Andy Bloch" (table breaking up)
+    TABLE_TALK = "table_talk"  # "% ..." lines signed "-- RiverRat --"; player, text = the talk
     OTHER = "other"  # anything unrecognised; text preserved
 
 
@@ -75,6 +77,7 @@ class HandEvent:
     total: int | None = None  # raise-to total
     net: int | None = None  # WINS only
     cards: tuple[Card, ...] = ()
+    all_in: bool = False  # "... bets $63,500 and is all in"
 
 
 @dataclass(frozen=True)

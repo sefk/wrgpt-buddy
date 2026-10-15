@@ -6,6 +6,7 @@ Pure function over the decoded subject and text/plain body; stdlib only.
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -43,6 +44,12 @@ def parse_event(text: str, ts: datetime | None = None) -> HandEvent | None:
     Returns None for status lines that are not events.
     """
     text = text.strip()
+    if text.endswith(" and is all in"):
+        text = text[: -len(" and is all in")]
+        ev = parse_event(text, ts)
+        if ev and ev.kind != EventKind.OTHER:
+            return replace(ev, text=f"{text} and is all in", all_in=True)
+        return _ev(EventKind.ALL_IN, f"{text} and is all in", ts, all_in=True)
     if text == "Dealing a new hand":
         return _ev(EventKind.NEW_HAND, text, ts)
     if text == "No ante":
@@ -86,6 +93,10 @@ def parse_event(text: str, ts: datetime | None = None) -> HandEvent | None:
     if m := re.match(rf"^{_NAME} wins {_MONEY}(?: \(net {_MONEY}\))?", text):
         net = _money(m[3]) if m[3] else None
         return _ev(EventKind.WINS, text, ts, player=m["p"], amount=_money(m[2]), net=net)
+    if m := re.match(r"^Player leaving table: (?P<p>.+)$", text):
+        return _ev(EventKind.PLAYER_LEFT, text, ts, player=m["p"])
+    if m := re.match(r"^-- (?P<p>.+) --$", text):
+        return _ev(EventKind.TABLE_TALK, "", ts, player=m["p"])
     if m := re.match(rf"^{_NAME} timed out during this hand$", text):
         return _ev(EventKind.TIMED_OUT, text, ts, player=m["p"])
     # Status-ish lines that are not events.
@@ -167,6 +178,14 @@ def parse_broadcast(subject: str, body: str) -> Broadcast:
     status_url = None
     in_row = False
     mode = "pre"  # pre -> after_table -> history -> notes
+    talk: list[str] = []  # pending "% ..." table-talk lines, signed by a later "-- Name --"
+
+    def _with_talk(ev):
+        if ev.kind != EventKind.TABLE_TALK:
+            return ev
+        text = "\n".join(talk)
+        talk.clear()
+        return replace(ev, text=text)
 
     for raw in lines[1:] if lines else []:
         line = raw.rstrip()
@@ -187,6 +206,9 @@ def parse_broadcast(subject: str, body: str) -> Broadcast:
             status_url = m[1]
             mode = "done"
             continue
+        if line.startswith("%") and mode != "done":
+            talk.append(line[1:].strip())
+            continue
         if mode == "done" or not line.startswith("!"):
             if line.strip() and mode == "notes":
                 mode = "done"
@@ -206,7 +228,7 @@ def parse_broadcast(subject: str, body: str) -> Broadcast:
                 text = tm[2]
             ev = parse_event(text, ts)
             if ev:
-                history.append(ev)
+                history.append(_with_talk(ev))
             continue
         # pre / after_table: action lines and status lines
         if m := re.match(r"^(.+?) is (?:next|first) to act(?:, \$([\d,]+) to call)?$", text):
@@ -221,7 +243,7 @@ def parse_broadcast(subject: str, body: str) -> Broadcast:
         elif m := re.match(r"^Board:\s*(.*)$", text):
             board = _parse_board(m[1])
         elif (ev := parse_event(text)) is not None:
-            events.append(ev)
+            events.append(_with_talk(ev))
 
     return Broadcast(
         table=header["table"],

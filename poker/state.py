@@ -92,7 +92,11 @@ def _apply_broadcast(raw: RawEmail, b: Broadcast) -> None:
             hand.winner = "\n".join(wins)
 
     # --- current state: only advance on a newer sequence ---
-    if b.sequence > hand.last_sequence:
+    if b.sequence > hand.last_sequence and hand.is_over and not b.hand_over:
+        # A finished hand can still get stray broadcasts (e.g. a player being
+        # moved when the table breaks). Don't let them reopen it.
+        hand.last_sequence = b.sequence
+    elif b.sequence > hand.last_sequence:
         hand.last_sequence = b.sequence
         hand.day = b.day
         hand.betting_round = b.betting_round
