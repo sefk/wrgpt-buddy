@@ -1,0 +1,136 @@
+Delivered-To: sefklon@gmail.com
+Received: by 2002:a05:6674:6c86:b0:75c:4a9c:83f3 with SMTP id xm6csp404893pxc;
+        Thu, 15 Oct 2026 08:18:40 -0700 (PDT)
+X-Received: by 2002:a05:620a:a2da:20b0:93e:c12c:f136 with SMTP id af79cd13be357-93ec12d06f3mr2103503885a.81.1792077519595;
+        Thu, 15 Oct 2026 08:18:39 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1792077519; cv=none;
+        d=google.com; s=arc-20260327;
+        b=sdoKmZzp/1hGwCAysx36RLFir1CNpQwmPOToyFVMYeZB2+8cjwj+Gr6ocHdJ1N03da
+         rMXy1w5KD1oD2QzXRiMUVm+dt8cTk+cSCHB4z8L5XSWZEe57rUnSsaDDLxUpDJlobBhy
+         JbSrtDG4bRd1ZK7TshdYkd+zq4IJ9qZI/zv4h38H1EzeFrKu7pyVMnVNwk9YCDgRDYCE
+         32fwIXbP53s25fzwJ+SLQXmjHSTlg9/DyFDmin+dwUtruzOn9sM7jxphKpJClpxMvE3E
+         5jIWUdWyEo/GNqv9xpjjDVGCOoOKziA1Ez2Z2zVZNik5xCGBgkdvMLiXcCFOcXPb1csw
+         D8CQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=date:message-id:subject:from:reply-to:to:dkim-signature;
+        bh=P27b0M2wxbt7PLbOlT96csLWGUOLTsRE8k1N4GgUKFE=;
+        fh=StgVNstZVm6CA/jWzog2GqNh+VGFtKDwql9+cOAjdD0=;
+        b=i5igmt8n5PeipAFvF2CxCCxjmUgC6qPcYs2QYp7nSlVEtDBPi64JCe/otWu5QPikMa
+         0VIrR/90w7SdBmBrzcbzZtlRCXmGbOr9oaWjgt/G+/anJIYfS+YhxZ/PdcSmJHGsqxhe
+         6QZ70NhMKzoEBc6NZOzL2Xp/fA5Gsqxsm3QB3YSLJ1bfDkKCYi81h+mWHsjHRvGx3r38
+         Fkb/ZUOdoDGuFbzVlQ93tTxWPq8bpMC0bGZenU6c8Lz4OaIHVYZH3atFb/mUcXJXAsSV
+         yHG3g/95i5vwDehy4zNvkqdNcOrVRHTzre56cMdqO5paeVFnczxpcrWkVMmkItTQ14Q/
+         rQAQ==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@wrgpt.org header.s=mail._domainkey header.b=Nqi4fpSs;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Return-Path: <floorman@wrgpt.org>
+Received: from presto.wrgpt.org (wrgpt.org. [74.208.146.72])
+        by mx.google.com with ESMTPS id af79cd13be357-93ef515df8dsi693354485a.499.2026.10.15.08.18.39
+        for <sefklon@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Thu, 15 Oct 2026 08:18:39 -0700 (PDT)
+Received-SPF: pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) client-ip=74.208.146.72;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@wrgpt.org header.s=mail._domainkey header.b=Nqi4fpSs;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=wrgpt.org;
+	s=mail._domainkey; t=1792077519;
+	bh=j5rapKXdRQfFf2uhxZZRi1f1k21sqoWAdOWN5D7+Fzw=;
+	h=To:Reply-To:From:Subject:Date:From;
+	b=Nqi4fpSsXUF2m3trfQmjQo2QcC0HzlNpHfW/w11JPkMUkE7jQsHwBQ2sQfHOC7yTv
+	 ogwlZmNuDicMcXpQ26QsR80xDfog6aVps+Dbet7LvY0wz/sO+uurH3YTOoYrz3UVnT
+	 6yPeYKmTepFfhiApw6+V6TI7yB4F+ewldkb1dEVZJWkjhdO/JAfpBEVO/K5E+mzWVg
+	 ONoT1i7wp5bu1DDBCq851TDjxyms+ywbfKGwxITQNSdRAx440b/eJxvC4V8hWTN3hc
+	 xhPv7fqxI8U45ACwO9e4WvcwDhzozMLhQuIpEVWRCnAWrOYxOTSEZxIkP/xELbCewL
+	 kPbMClw44rW+Q==
+Received: by presto.wrgpt.org (Postfix, from userid 1000)
+	id 06E9422F3DC; Thu, 15 Oct 2026 08:18:39 -0700 (PDT)
+To: sefklon@gmail.com
+Reply-To: dealer@wrgpt.org
+From: dealer@wrgpt.org
+Subject: Holdem game (ID=vimuho) [hand:3] Advance action acknowledgement
+Message-Id: <20261015151839.06E9422F3DC@presto.wrgpt.org>
+Date: Thu, 15 Oct 2026 08:18:39 -0700 (PDT)
+
+! Table b17, Hand 3, Day 4
+
+! Acknowledging your advance action; thank you.
+! Sticky advance action:
+! Check if $0 to you, fold otherwise
+! No table talk stored with your advance action
+
+
+This table's current status can be found at https://hands.wrgpt.org/b/b17.html
+
+TOURNEY INFORMATION
+
+NOTICE:
+
+This is the REAL WRGPT36.
+
+Please play as soon as you are able to keep the action going.
+
+Yahoo.com and the domains it serves (aol.com, pacbell.net. ...)
+are still not very reliable.  Some emails are getting through.
+Some are being deferred and retried later.  
+On October 13 (day 2) for Yahoo hosts emails:
+ - 777 messages were sent 
+ - 434 messages were delivered (according to yahoo servers)
+ - 24,662 attempts were made by the WRGPT server because of deferrals
+
+Domains we know are hosted by Yahoo and having relability issues:
+yahoo.com, aol.com, verizon.net, sbcglobal.net, 
+frontier.com, comcast.net, pacbell.net
+There may be many others but they haven't been discovered.
+
+gmail.com emails were unstable for several hours on 10/14
+when gmail decided wrgpt.org was a bulk mailer as we crossed
+the threshold for the first time.  More email verification
+steps were necessary and those were done by 21:00 10/14.
+You may have missed some email during the several hours
+but it should be ok now.
+
+One line email survey: https://forms.gle/fBKze5L25xoL1VXWA
+You can answer is every day if you like but please not
+more than once per day.
+
+Note: 
+- If you are away from the game for 28 consecutive days you will be removed.
+- Blinds increase every 14 days.  The structure is available at https://wrgpt.org/holidays
+- If you timeout too many times you will be removed.
+
+--
+
+WRGPT has no entry fee and no prizes.  The amounts
+shown in the standings are hypothetical prizes that
+might be what a $10k tourney of this size may have.
+
+======
+
+Total Empty Seats: 3
+No Live redraw in progress.
+
+===== helpful links =====
+
+Mailing lists for all hands and nightly standings
+see https://www.wrgpt.org
+
+So, you were eliminated?  See this: 
+https://www.wrgpt.org/iwaseliminated.html
+
+The manual on how to use the commands is here:
+https://www.wrgpt.org/manual
+
+The round structure and holidays are at:
+https://www.wrgpt.org/holidays
+
+Having problems? Send email to floorman36@wrgpt.org.
+
+You can follow WRGPT on Facebook: https://facebook.com/wrgpt
+Hand history: https://hands.wrgpt.org
+
+Your automated Holdem dealer

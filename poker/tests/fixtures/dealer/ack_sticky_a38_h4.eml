@@ -1,0 +1,94 @@
+Delivered-To: sefklon@gmail.com
+Received: by 2002:a05:6a10:62d0:b0:73b:28f0:a1c5 with SMTP id e16csp6582844pxj;
+        Thu, 17 Sep 2026 08:36:27 -0700 (PDT)
+X-Received: by 2002:a05:620a:17a4:b0:93b:b621:e14d with SMTP id af79cd13be357-93bb7705308mr1152548985a.21.1789659386750;
+        Thu, 17 Sep 2026 08:36:26 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1789659386; cv=none;
+        d=google.com; s=arc-20260327;
+        b=IVlUbuyMGDSmQQQy2Mk8L02noy4zBrqu/zEA6N4D33iXv9f9OJOomwT+BpTTiLJYjb
+         eF4de+Bgxy6osFGiGmQNQsrZL5xuHRXuDpOqguYieFOm5tdFI9FojntKevHVkDKTF7AL
+         iIuY/TzJuXXJ3qDBsOFH6wBw+DvOljawMEJm9O0YrHTVCyOOEnusrY294u16bRpeY2kz
+         jR07dR05HDP2t5SjmYFM0iI2A1QlhZj8hbAqgUAihQdkZCyA4J+TE2CnbUxc0svlyf7i
+         kg3nNNUevawiV7aE2BBLQuvmlHQrGCWioUS8V0s3WXn4BkfnfR8BPhupjOb06IppfWjz
+         XnVg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=date:message-id:subject:from:reply-to:to;
+        bh=W7bf92PLGnJ8wZYN3olnXuPq775H068Zn/qJGm9ykG4=;
+        fh=StgVNstZVm6CA/jWzog2GqNh+VGFtKDwql9+cOAjdD0=;
+        b=Pi4IIcyIc/6aDvcDFtRWosdtETlbEI7ABC4/1+T3nwGKEDn5N3r+HcabNDsFEAZNWD
+         iOYy/Cy6NcsW6nN278nO8h8iIwzoYfzOKcSm5uGIUa9028Eh27PqnQbAv2hLmddEtYgx
+         HIdcdpRCiiLOFDNOxiUKiGTlbDG1Ydq8Q8GleFd4a/ymHNptfRpb4UAJd2PIvejnnFg1
+         rZDuozUmcSh97dkA11ARY2gNOGddUD9N05VddL6H2kRmN6bH6RX9FFN7hxpxcBPMpbkW
+         v5RS8tkuQLZnjE8g7iCuAORdYhtYTtt0qzuIkViumEdxNvDwjJFUn+qgAFyK4lxUGDDh
+         nbOg==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Return-Path: <floorman@wrgpt.org>
+Received: from presto.wrgpt.org (wrgpt.org. [74.208.146.72])
+        by mx.google.com with ESMTP id af79cd13be357-93b81cf22d2si482006885a.103.2026.09.17.08.36.26
+        for <sefklon@gmail.com>;
+        Thu, 17 Sep 2026 08:36:26 -0700 (PDT)
+Received-SPF: pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) client-ip=74.208.146.72;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Received: by presto.wrgpt.org (Postfix, from userid 1000)
+	id 46A132377DF; Thu, 17 Sep 2026 08:36:26 -0700 (PDT)
+To: sefklon@gmail.com
+Reply-To: dealer@wrgpt.org
+From: dealer@wrgpt.org
+Subject: Holdem game (ID=pikaro) [hand:4] Advance action acknowledgement
+Message-Id: <20260917153626.46A132377DF@presto.wrgpt.org>
+Date: Thu, 17 Sep 2026 08:36:26 -0700 (PDT)
+
+! Table a38, Hand 4, Day 4
+
+! Acknowledging your advance action; thank you.
+! Sticky advance action:
+! Check if $0 to you, fold otherwise
+! No table talk stored with your advance action
+
+
+This table's current status can be found at http://hands.wrgpt.org/a/a38.html
+
+TOURNEY INFORMATION
+
+NOTICE:
+
+This is the practice round for WRGPT36.
+The real tourney will start around October 12, 2026.
+
+Note: 
+- If you are away from the game for 28 consecutive days you will be removed.
+- Blinds increase every 14 days.  The structure is available at http://wrgpt.org/holidays
+
+--
+
+WRGPT has no entry fee and no prizes.  The amounts
+shown in the standings are hypothetical prizes that
+might be what a $10k tourney of this size may have.
+
+======
+
+Total Empty Seats: 11
+No Live redraw in progress.
+
+===== helpful links =====
+
+So, you were eliminated?  See this: 
+http://www.wrgpt.org/iwaseliminated.html
+
+The manual on how to use the commands is here:
+http://www.wrgpt.org/manual
+
+The round structure and holidays are at:
+http://www.wrgpt.org/holidays
+
+Having problems? Send email to floorman36@wrgpt.org.
+
+You can follow WRGPT on Facebook: http://facebook.com/wrgpt
+Hand history: http://hands.wrgpt.org
+
+Your automated Holdem dealer

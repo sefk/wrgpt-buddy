@@ -26,6 +26,8 @@ class EmailKind(enum.StrEnum):
     YOUR_CARDS = "your_cards"  # "Holdem game (ID=pikaro) [hand:2]: your cards"
     REMINDER = "reminder"  # dealer's "reminder (ID=vimuho)[hand:2]"
     MY_REPLY = "my_reply"  # my own reply to the dealer, e.g. "Re: reminder (ID=...)"
+    ADVANCE_ACK = "advance_ack"  # "Holdem game (ID=pikaro) [hand:4] Advance action acknowledgement"
+    DEALER_ERROR = "dealer_error"  # "Holdem game (ID=pikaro) [hand:36] Error Message"
     UNKNOWN = "unknown"
 
 
@@ -142,7 +144,31 @@ class MyReply:
 
 
 @dataclass(frozen=True)
+class AdvanceAck:
+    """Dealer's acknowledgement of an advance action I sent."""
+
+    table: str
+    hand_number: int
+    day: int | None
+    game_id: str | None
+    sticky: bool
+    description: str  # e.g. "Check if $0 to you, fold otherwise"
+    table_talk: str | None  # None when "No table talk stored"
+
+
+@dataclass(frozen=True)
+class DealerError:
+    """Dealer rejected a command of mine."""
+
+    table: str
+    hand_number: int
+    day: int | None
+    game_id: str | None
+    message: str  # e.g. "missing bet(perhaps forgot $-sign)"
+
+
+@dataclass(frozen=True)
 class ParsedEmail:
     meta: EmailMeta
-    body: Broadcast | PrivateState | MyReply | None = None
+    body: Broadcast | PrivateState | MyReply | AdvanceAck | DealerError | None = None
     errors: tuple[str, ...] = field(default=())

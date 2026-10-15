@@ -1,0 +1,101 @@
+Delivered-To: sefklon@gmail.com
+Received: by 2002:a05:6a10:e893:b0:73b:28f0:a1c5 with SMTP id gl19csp2785630pxb;
+        Sun, 27 Sep 2026 18:28:37 -0700 (PDT)
+X-Received: by 2002:a05:6214:2dc2:b0:914:4dd0:b4b1 with SMTP id 6a1803df08f44-9144f813cf4mr106855376d6.35.1790558917086;
+        Sun, 27 Sep 2026 18:28:37 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1790558917; cv=none;
+        d=google.com; s=arc-20260327;
+        b=i3EAuIqXHFL8roP3WQcSb02b8tQPzKlPXMfvnENaCNi8V/J/RZeEkR/NZsPykQCd7+
+         p6oiMRFuhk3vZASWpHdR49oS4/7RJ5KgtdxsCWxBKSisHGvSrzp2q8Tq9toBC2/ka7rI
+         eYFbgS3+tI7/spaM2Dyedom433sWfCvQrqBizMWSER//Qz9oI0eSFuZ7psaM06kG08zT
+         U46rplhxXoVCqO8IdYW2ePIqpUV2v8SnHEqBrYk78pwZSY5upsZqbhNJENJv+KjOya/G
+         mFg0yDk3EV0qgSFaoUbhL3g57PeECmD8IyVpY8nkvHzGhgeWUnv6qF6/Y/EcRVb8mmGU
+         oO5g==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=date:message-id:subject:from:reply-to:to;
+        bh=Ed9yS6Lxov5wFbR/bhHKiI/3bGpgA0C5EaLwXt8v+u4=;
+        fh=StgVNstZVm6CA/jWzog2GqNh+VGFtKDwql9+cOAjdD0=;
+        b=oFNiz3bFaDer78IupobpfD+p36ce+wvVbxA3HkflMq0SKnUuscL4hiG9p/x5Hd01rN
+         CZvB0955epx2VxyKIN//gehDFWi+jy7z94jweK1RA+9PkGJVt9pJrkycqrgqj5MzYWC7
+         k6UuV83ducLypwKwShrpYuvpjyY9jBbmnqnVlDdc9i5xltwB/flQhiu9Kvf44j/rB1rq
+         fujhaqqh8DWH/aCRqF7hbMLNpEfOaoTMWEbqFl4GqdGS9iBs0Xo8lXDITUlFKUEgp3o9
+         XIKL6ec02Z7phIfmEmNwl+jr5gUDvCE61oJCt+YTE6zsWu48mzeqr330JT4TqHeN39tm
+         5tnQ==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Return-Path: <floorman@wrgpt.org>
+Received: from presto.wrgpt.org (wrgpt.org. [74.208.146.72])
+        by mx.google.com with ESMTP id 6a1803df08f44-914310030a5si92965486d6.655.2026.09.27.18.28.36
+        for <sefklon@gmail.com>;
+        Sun, 27 Sep 2026 18:28:37 -0700 (PDT)
+Received-SPF: pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) client-ip=74.208.146.72;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Received: by presto.wrgpt.org (Postfix, from userid 1000)
+	id CDD3722F37A; Sun, 27 Sep 2026 18:28:36 -0700 (PDT)
+To: sefklon@gmail.com
+Reply-To: dealer@wrgpt.org
+From: dealer@wrgpt.org
+Subject: Holdem game (ID=pikaro) [hand:27] Advance action acknowledgement
+Message-Id: <20260928012836.CDD3722F37A@presto.wrgpt.org>
+Date: Sun, 27 Sep 2026 18:28:36 -0700 (PDT)
+
+! Table a31, Hand 27, Day 14
+
+! Acknowledging your advance action; thank you.
+! Non-sticky advance action:
+! Adding $1,200 to your previous action, get a choice if insufficient
+! No table talk stored with your advance action
+
+
+This table's current status can be found at https://hands.wrgpt.org/a/a31.html
+
+TOURNEY INFORMATION
+
+NOTICE:
+
+This is the practice round for WRGPT36.
+The real tourney will start around October 12, 2026.
+
+Check down at the bottom of every dealer message for information like this.
+
+Day 13 and still 13 players who have not arrived for the practice round.
+If you don't want to play the practice round email the floorman.
+If you don't want to play in the real tournament also email the floorman.
+
+
+Note: 
+- If you are away from the game for 28 consecutive days you will be removed.
+- Blinds increase every 14 days.  The structure is available at https://wrgpt.org/holidays
+
+--
+
+WRGPT has no entry fee and no prizes.  The amounts
+shown in the standings are hypothetical prizes that
+might be what a $10k tourney of this size may have.
+
+======
+
+Total Empty Seats: 5
+No Live redraw in progress.
+
+===== helpful links =====
+
+So, you were eliminated?  See this: 
+https://www.wrgpt.org/iwaseliminated.html
+
+The manual on how to use the commands is here:
+https://www.wrgpt.org/manual
+
+The round structure and holidays are at:
+https://www.wrgpt.org/holidays
+
+Having problems? Send email to floorman36@wrgpt.org.
+
+You can follow WRGPT on Facebook: https://facebook.com/wrgpt
+Hand history: https://hands.wrgpt.org
+
+Your automated Holdem dealer

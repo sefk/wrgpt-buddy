@@ -13,6 +13,8 @@ from poker.parsing.types import EmailKind, EmailMeta
 _BROADCAST = re.compile(r"\[\w+\.\d+\]\s*\[hand:\d+\]\s*Holdem Game Broadcast Message", re.I)
 _YOUR_CARDS = re.compile(r"Holdem game \(ID=[^)]+\)\s*\[hand:\d+\]:?\s*your cards", re.I)
 _REMINDER = re.compile(r"reminder \(ID=[^)]+\)\s*\[hand:\d+\]", re.I)
+_ADVANCE_ACK = re.compile(r"Holdem game \(ID=[^)]+\)\s*\[hand:\d+\]\s*Advance action acknowledgement", re.I)
+_DEALER_ERROR = re.compile(r"Holdem game \(ID=[^)]+\)\s*\[hand:\d+\]\s*Error Message", re.I)
 _RE_PREFIX = re.compile(r"^\s*re:\s*", re.I)
 
 
@@ -34,6 +36,10 @@ def classify(subject: str, from_addr: str, to_addrs: Iterable[str], my_addresses
             return EmailKind.YOUR_CARDS
         if _REMINDER.search(subject):
             return EmailKind.REMINDER
+        if _ADVANCE_ACK.search(subject):
+            return EmailKind.ADVANCE_ACK
+        if _DEALER_ERROR.search(subject):
+            return EmailKind.DEALER_ERROR
         return EmailKind.UNKNOWN
     if from_addr in mine:
         to_dealer = any(a.endswith("@wrgpt.org") for a in to_addrs)

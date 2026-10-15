@@ -8,9 +8,12 @@ import html
 import re
 from collections.abc import Iterable
 
+from poker.parsing.dealer import parse_advance_ack, parse_dealer_error
 from poker.parsing.envelope import parse_meta
 from poker.parsing.private import parse_my_reply, parse_private
 from poker.parsing.types import (
+    AdvanceAck,
+    DealerError,
     Board,
     Broadcast,
     Card,
@@ -25,6 +28,7 @@ from poker.parsing.types import (
 )
 
 __all__ = [
+    "AdvanceAck", "DealerError", "parse_advance_ack", "parse_dealer_error",
     "Board", "Broadcast", "Card", "EmailKind", "EmailMeta", "EventKind", "HandEvent",
     "MyReply", "ParsedEmail", "PrivateState", "SeatRow",
     "parse_email", "parse_meta", "parse_private", "parse_my_reply",
@@ -59,6 +63,10 @@ def parse_email(raw: bytes, my_addresses: Iterable[str] = ("sefklon@gmail.com",)
             from poker.parsing.broadcast import parse_broadcast
 
             body = parse_broadcast(meta.subject, text)
+        elif meta.kind is EmailKind.ADVANCE_ACK:
+            body = parse_advance_ack(meta.subject, text)
+        elif meta.kind is EmailKind.DEALER_ERROR:
+            body = parse_dealer_error(meta.subject, text)
         elif meta.kind is EmailKind.MY_REPLY:
             body = parse_my_reply(meta.subject, text)
         else:

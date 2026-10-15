@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
 from .models import Action, Hand, MyHand, Player, RawEmail, Seat, Table
 from .parsing.types import (
+    AdvanceAck,
+    DealerError,
     Broadcast,
     EventKind,
     HandEvent,
@@ -108,6 +111,35 @@ def _apply_broadcast(raw: RawEmail, b: Broadcast) -> None:
     elif b.hand_over and not hand.is_over:
         hand.is_over = True
     hand.save()
+    _clear_consumed_advance(raw, hand, b)
+
+
+_ACTION_KINDS = {EventKind.FOLD, EventKind.CHECK, EventKind.CALL, EventKind.BET, EventKind.RAISE, EventKind.ALL_IN}
+
+
+def _clear_consumed_advance(raw: RawEmail, hand: Hand, b: Broadcast) -> None:
+    """Drop my advance action once the dealer has used it.
+
+    Per the manual an advance action runs the next time it is my turn, then is
+    erased, unless it is sticky, in which case it lasts until the hand ends.
+    So: a broadcast sent after the acknowledgement that shows an action by me
+    (settings.WRGPT_PLAYER_NAME) clears a non-sticky advance action, and a
+    broadcast that ends the hand clears any advance action. Broadcasts sent
+    before the acknowledgement (out-of-order arrival, or the action that
+    predates it) never clear it. History lines are ignored for the action
+    check (they replay the whole hand) but a final broadcast still ends it.
+    """
+    mine = MyHand.objects.filter(hand=hand).first()
+    if mine is None or not mine.advance_action or raw.sent_at is None:
+        return
+    if mine.advance_action_at is not None and raw.sent_at <= mine.advance_action_at:
+        return
+    me = settings.WRGPT_PLAYER_NAME
+    acted = any(e.kind in _ACTION_KINDS and e.player == me for e in b.events)
+    if b.hand_over or (acted and not mine.advance_sticky):
+        mine.advance_action = ""
+        mine.advance_sticky = False
+        mine.save(update_fields=["advance_action", "advance_sticky"])
 
 
 def _apply_seats(hand, b):
@@ -160,6 +192,35 @@ def _apply_reply(raw: RawEmail, r: MyReply) -> None:
         mine.save(update_fields=["last_command", "last_command_at"])
 
 
+def _my_hand_by_id(table, number, game_id, status_url=None) -> MyHand:
+    hand = _get_hand(table, number, status_url)
+    mine, _ = MyHand.objects.get_or_create(hand=hand)
+    if game_id and not mine.game_id:
+        mine.game_id = game_id
+        mine.save(update_fields=["game_id"])
+    return mine
+
+
+def _apply_advance_ack(raw: RawEmail, a: AdvanceAck) -> None:
+    mine = _my_hand_by_id(a.table, a.hand_number, a.game_id)
+    if mine.advance_action_at is None or raw.sent_at is None or raw.sent_at >= mine.advance_action_at:
+        text = a.description
+        if a.table_talk:
+            text += f"\nTable talk: {a.table_talk}"
+        mine.advance_action = text
+        mine.advance_sticky = a.sticky
+        mine.advance_action_at = raw.sent_at
+        mine.save(update_fields=["advance_action", "advance_sticky", "advance_action_at"])
+
+
+def _apply_dealer_error(raw: RawEmail, e: DealerError) -> None:
+    mine = _my_hand_by_id(e.table, e.hand_number, e.game_id)
+    if mine.last_error_at is None or raw.sent_at is None or raw.sent_at >= mine.last_error_at:
+        mine.last_error = e.message
+        mine.last_error_at = raw.sent_at
+        mine.save(update_fields=["last_error", "last_error_at"])
+
+
 @transaction.atomic
 def apply(raw_email: RawEmail, parsed: ParsedEmail) -> None:
     body = parsed.body
@@ -169,6 +230,10 @@ def apply(raw_email: RawEmail, parsed: ParsedEmail) -> None:
         _apply_private(raw_email, body)
     elif isinstance(body, MyReply):
         _apply_reply(raw_email, body)
+    elif isinstance(body, AdvanceAck):
+        _apply_advance_ack(raw_email, body)
+    elif isinstance(body, DealerError):
+        _apply_dealer_error(raw_email, body)
 
 
 def parse_raw_bytes(data: bytes) -> ParsedEmail:

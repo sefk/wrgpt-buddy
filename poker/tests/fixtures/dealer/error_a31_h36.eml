@@ -1,0 +1,105 @@
+Delivered-To: sefklon@gmail.com
+Received: by 2002:a05:6a10:6713:b0:75b:ec3:beae with SMTP id v19csp1058915pxu;
+        Wed, 7 Oct 2026 16:03:17 -0700 (PDT)
+X-Received: by 2002:a05:6820:221c:b0:6e0:d948:cd41 with SMTP id 006d021491bc7-6e7a575e758mr3540658eaf.26.1791414197472;
+        Wed, 07 Oct 2026 16:03:17 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1791414197; cv=none;
+        d=google.com; s=arc-20260327;
+        b=UNEb9KKjmnRyE20bOu4EkW5bLkuFcuw/tthbPvI5Ubr7y4U3Ts6DCTlJwE2Hhg4XzG
+         dcp18qyb+UzMve9aFnbGShsJPzH0gSz27oEb200N09rSmYa2+UQ7Ws/XeHO210Ddow4Q
+         4YVztpS06aR7ZAT2K3bftFn1JtVfwxZoixPKHZWWb09MAh/GA+grDI2qZdF5u9lj8d3L
+         X9U/9qr9UQqbYVBW9rB2NS3sc4ohROwLb2hrb1c1x0HPr7e/Wcjd2gV0P2tNAuRJZF59
+         Ojk1qZ5e8qWpJ+1jFne+FiNEOlC4jCGcWYZm8CayVwI9ij51g3tRW6BwlTT7KjC5e2o6
+         r03w==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=date:message-id:subject:from:reply-to:to;
+        bh=OXVtgXIAmWvzZ2sKRKMwSDtjzq2BxYgOewqz3SL/RUI=;
+        fh=StgVNstZVm6CA/jWzog2GqNh+VGFtKDwql9+cOAjdD0=;
+        b=I0IiIY2SkV9u7LhQweZ2kZhT7nDE/rmcrWTqbm8Mwjw93+mR2G+VVYCC1+tLPQwnsl
+         Bs5pEfIUxyuHiQXis05Ygem5fts7gSSdJVrH+lYriyWS5ebVGQqWPMLyM+WHa85183mw
+         PYmcCJL3Xe4Iglx7uqVbp3fmqRjwGcvbIXAveCytW0jvJ3fuieNGx1yiiUlWpPiQC9/a
+         yNxJdg3xITFVGGreNTXaQ8qKO5j5gYpMxg3XcYQ7o7WzdGQ3qUxLACmjk6YCKCGOs7ln
+         9unhF86nT2hyOPx8QM5HfOdev67BXFPAhTDnZCQlqyLUjYpnICT9VRPNTrihi6hL9A6d
+         NsjQ==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Return-Path: <floorman@wrgpt.org>
+Received: from presto.wrgpt.org (wrgpt.org. [74.208.146.72])
+        by mx.google.com with ESMTP id 46e09a7af769-82adcb15681si6688039a34.47.2026.10.07.16.03.17
+        for <sefklon@gmail.com>;
+        Wed, 07 Oct 2026 16:03:17 -0700 (PDT)
+Received-SPF: pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) client-ip=74.208.146.72;
+Authentication-Results: mx.google.com;
+       spf=pass (google.com: domain of floorman@wrgpt.org designates 74.208.146.72 as permitted sender) smtp.mailfrom=floorman@wrgpt.org;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=wrgpt.org
+Received: by presto.wrgpt.org (Postfix, from userid 1000)
+	id 3D9F32397FF; Wed, 07 Oct 2026 16:03:17 -0700 (PDT)
+To: sefklon@gmail.com
+Reply-To: dealer@wrgpt.org
+From: dealer@wrgpt.org
+Subject: Holdem game (ID=pikaro) [hand:36] Error Message
+Message-Id: <20261007230317.3D9F32397FF@presto.wrgpt.org>
+Date: Wed, 07 Oct 2026 16:03:17 -0700 (PDT)
+
+! Table a31, Hand 36, Day 24
+
+? Error: missing bet(perhaps forgot $-sign)
+
+
+This table's current status can be found at https://hands.wrgpt.org/a/a31.html
+
+TOURNEY INFORMATION
+
+NOTICE:
+
+This is the practice round for WRGPT36.
+The real tourney will start around October 12, 2026.
+
+Check down at the bottom of every dealer message for information like this.
+
+Thanks for playing the practice round.  It has been a good test
+of the new server.
+
+The practice round will end suddenly on Sunday, October 11
+to prepare for the real tournament planned to start Monday, October 12.
+
+The reminder email has been enhanced to include more information than last
+year to make it easier to act quickly when it is your turn.  A reminder
+message is sent as soon as it is your turn then once per hour starting
+just before your office day and throughout your office day if it is your turn.
+
+
+Note: 
+- If you are away from the game for 28 consecutive days you will be removed.
+- Blinds increase every 14 days.  The structure is available at https://wrgpt.org/holidays
+
+--
+
+WRGPT has no entry fee and no prizes.  The amounts
+shown in the standings are hypothetical prizes that
+might be what a $10k tourney of this size may have.
+
+======
+
+Total Empty Seats: 15
+Live redraw in progress:
+
+===== helpful links =====
+
+So, you were eliminated?  See this: 
+https://www.wrgpt.org/iwaseliminated.html
+
+The manual on how to use the commands is here:
+https://www.wrgpt.org/manual
+
+The round structure and holidays are at:
+https://www.wrgpt.org/holidays
+
+Having problems? Send email to floorman36@wrgpt.org.
+
+You can follow WRGPT on Facebook: https://facebook.com/wrgpt
+Hand history: https://hands.wrgpt.org
+
+Your automated Holdem dealer
