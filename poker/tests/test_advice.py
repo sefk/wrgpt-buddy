@@ -80,7 +80,7 @@ def fakes(monkeypatch, tmp_path, settings):
         so = ({"recommendation": None, "judgement": {
                   "verdicts": [{"model": "Qwen", "concurrence": "agree", "evaluation": "ok"},
                                {"model": "gpt-oss", "concurrence": "different_action", "evaluation": "no"}],
-                  "preferred": "Sonnet", "summary": "sum"}}
+                  "preferred": "Sonnet", "summary": "sum", "on_actual": "you were fine"}}
               if resume else
               {"recommendation": {"action": "call", "amount": None, "command": "call *", "reasoning": "r"},
                "judgement": None})
@@ -192,7 +192,7 @@ def test_engine_all_fail(my_turn, monkeypatch, settings, tmp_path):
 
 
 def test_engine_unexpected_exception(my_turn, monkeypatch):
-    monkeypatch.setattr(engine, "build_prompt", lambda h: 1 / 0)
+    monkeypatch.setattr(engine, "build_prompt", lambda h, p=None: 1 / 0)
     rec = engine.run(Recommendation.objects.create(hand=my_turn, decision_key="k"))
     assert rec.status == "error" and "ZeroDivisionError" in rec.error and rec.finished_at
 
@@ -203,6 +203,7 @@ def test_due_decisions_idempotent(my_turn):
     assert len(first) == 1
     r = first[0]
     assert r.decision_key == f"seq{my_turn.last_sequence}" and r.status == "pending" and not r.requested
+    assert r.point == "r2n2" and (r.table_name, r.hand_number) == ("b17", 2)
     assert engine.due_decisions() == []
     assert Recommendation.objects.count() == 1
     # a new broadcast is a new decision
@@ -265,3 +266,89 @@ def test_recommend_command_and_worker(my_turn, fakes, capsys):
     call_command("recommend_worker", "--once")
     rec = Recommendation.objects.get()
     assert rec.status == "done" and not rec.requested
+
+
+# ---------- past points ----------
+@pytest.fixture
+def over(fakes):
+    call_command("import_eml", str(FIXTURES))
+    return Hand.objects.get(table__name="b17", number=2)
+
+
+def test_engine_past_point(over, fakes):
+    rec = Recommendation.objects.create(hand=over, point="r2n1", decision_key=engine.past_decision_key("r2n1"))
+    assert rec.decision_key.startswith("pt-r2n1-") and len(rec.decision_key.split("-")[-1]) == 20
+    engine.run(rec)
+    rec.refresh_from_db()
+    assert rec.status == "done", rec.error
+    assert rec.actual == {"action": "fold", "amount": None, "text": "sefk folds"}
+    assert rec.actual_grade == "different_action"  # Sonnet (fake) says call
+    assert rec.judgement["on_actual"] == "you were fine"
+    assert rec.snapshot["to_call"] == 600 and rec.snapshot["board"] == "As 6c Th"
+    assert "4c" not in rec.prompt and "sefk folds" not in rec.prompt
+    (c1, _), (c2, _) = fakes["run"]
+    assert "sefk folds" in c2[-1] and "on_actual" in c2[-1] and "right and the models wrong" not in c2[-1]
+    assert "may conclude the player was right" in c2[-1]
+    for name in ("--json-schema", "--system-prompt", "--model", "--tools", "--setting-sources"):
+        assert flag(c1, name) == flag(c2, name)
+    schema = json.loads(flag(c1, "--json-schema"))
+    j = schema["properties"]["judgement"]["anyOf"][0]
+    assert "on_actual" in j["required"] and j["properties"]["on_actual"] == {"type": "string"}
+    assert "on_actual" in flag(c1, "--system-prompt")
+
+
+def test_engine_past_bet_actual_is_street_total(over, fakes):
+    from poker.models import Action
+    a = Action.objects.get(hand=over, text="sefk folds")
+    a.kind, a.amount, a.text = "bet", 900, "sefk bets $900"
+    a.save()
+    rec = engine.run(Recommendation.objects.create(hand=over, point="r2n1", decision_key="pt-r2n1-x"))
+    assert rec.actual == {"action": "bet", "amount": 900, "text": "sefk bets $900"}
+    assert rec.actual_grade == "different_action"
+
+
+def test_engine_live_point_has_no_actual(my_turn, fakes):
+    rec = engine.run(Recommendation.objects.create(hand=my_turn, point="r2n2", decision_key="seq1"))
+    assert rec.actual == {} and rec.actual_grade == ""
+    assert "Set `on_actual` to an empty string" in fakes["run"][1][0][-1]
+    assert "Amount to call: $400" in rec.prompt  # live path, not a replay
+
+
+def test_engine_legacy_blank_point_is_live(my_turn, fakes):
+    rec = engine.run(Recommendation.objects.create(hand=my_turn, decision_key="k"))
+    assert rec.status == "done" and rec.actual == {}
+
+
+def test_engine_past_point_unknown(over, fakes):
+    rec = engine.run(Recommendation.objects.create(hand=over, point="r9n9", decision_key="pt-r9n9-x"))
+    assert rec.status == "error" and "r9n9" in rec.error
+
+
+def test_recommend_point_command(over, fakes, capsys):
+    call_command("recommend", "b17", "2", "--point", "r1n1")
+    out = capsys.readouterr().out
+    assert "I played: sefk calls" in out and "actual_grade=agree" in out and "on my actual move: you were fine" in out
+    rec = Recommendation.objects.get(point="r1n1")
+    assert rec.decision_key.startswith("pt-r1n1-") and rec.requested and rec.status == "done"
+    assert rec.table_name == "b17" and rec.hand_number == 2
+    call_command("recommend", "b17", "2", "--point", "r1n1")  # a new row each time
+    assert Recommendation.objects.filter(point="r1n1").count() == 2
+    with pytest.raises(Exception, match="no decision"):
+        call_command("recommend", "b17", "2", "--point", "r3n1")
+
+
+def test_recommend_all_points(over, fakes, capsys):
+    call_command("recommend", "b17", "2", "--all-points")
+    assert sorted(Recommendation.objects.values_list("point", flat=True)) == ["r1n1", "r2n1"]
+    n = len(fakes["run"])
+    call_command("recommend", "b17", "2", "--all-points")
+    assert "already done" in capsys.readouterr().out and len(fakes["run"]) == n
+    call_command("recommend", "b17", "2", "--all-points", "--force")
+    assert Recommendation.objects.count() == 4
+
+
+def test_worker_processes_past_rows(over, fakes):
+    Recommendation.objects.create(hand=over, point="r1n1", decision_key="pt-r1n1-1", requested=True)
+    call_command("recommend_worker", "--once")
+    rec = Recommendation.objects.get(point="r1n1")
+    assert rec.status == "done" and rec.actual["action"] == "call"

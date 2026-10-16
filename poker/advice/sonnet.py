@@ -33,6 +33,7 @@ _judgement_props = {
     },
     "preferred": {"type": "string"},
     "summary": {"type": "string"},
+    "on_actual": {"type": "string"},
 }
 JUDGEMENT_SCHEMA = {
     "type": "object",
@@ -55,7 +56,9 @@ SYSTEM_PROMPT = (
     "You are an expert no-limit hold'em coach advising one player in a slow email tournament. "
     "You always answer with the structured output. When asked for advice on a situation, fill "
     "`recommendation` and set `judgement` to null. When later asked to compare other models' "
-    "answers with your own, fill `judgement` and set `recommendation` to null."
+    "answers with your own, fill `judgement` and set `recommendation` to null. In `judgement`, "
+    "`on_actual` comments on the move the player actually made when you are told it; "
+    "otherwise it is an empty string."
 )
 
 
@@ -125,7 +128,7 @@ def _fmt(o):
     return f"{o['action']}{amt} (command: {o.get('command', '')})\n{o.get('reasoning', '')}"
 
 
-def judge(session_id: str, locals_: list[dict], to_call=None) -> tuple[dict, float]:
+def judge(session_id: str, locals_: list[dict], to_call=None, actual: dict | None = None) -> tuple[dict, float]:
     """Turn 2 in the same session. Returns (judgement, cost_usd); judgement has `error` on failure."""
     ok = [o for o in locals_ if not o.get("error")]
     failed = [o["label"] for o in locals_ if o.get("error")]
@@ -134,6 +137,17 @@ def judge(session_id: str, locals_: list[dict], to_call=None) -> tuple[dict, flo
         parts += [f"{o['label']} answered: {_fmt(o)}", ""]
     if failed:
         parts += [f"({', '.join(failed)} failed to answer; ignore them.)", ""]
+    if actual:
+        amt = f" (total ${actual['amount']:,} this street)" if actual.get("amount") is not None else ""
+        parts += [
+            f"The player actually played: {actual.get('text') or actual.get('action')}{amt}. "
+            "This was a past decision and the player has since seen how the hand went; you have not. "
+            "In `on_actual`, give your candid, specific comment on that move (2-5 sentences): was it right, "
+            "wrong, or close, and why? You may conclude the player was right and the models were wrong.",
+            "",
+        ]
+    else:
+        parts += ["Set `on_actual` to an empty string.", ""]
     parts += [
         "For each model above, add a verdict: concurrence is 'agree' (same action, similar size), "
         "'same_action_different_size', or 'different_action'; the evaluation explains why. "

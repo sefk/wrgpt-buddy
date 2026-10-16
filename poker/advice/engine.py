@@ -14,6 +14,7 @@ from django.utils import timezone
 from poker.models import Hand, Recommendation
 
 from . import grading, local, sonnet
+from .points import actual_move, is_past, live_point, my_decisions
 from .prompt import build_prompt
 
 log = logging.getLogger("poker.advice")
@@ -24,6 +25,10 @@ def decision_key(hand: Hand) -> str:
     return f"seq{hand.last_sequence}"
 
 
+def past_decision_key(point: str) -> str:
+    return f"pt-{point}-{timezone.now():%Y%m%d%H%M%S%f}"
+
+
 def run(rec: Recommendation) -> Recommendation:
     """Fill in `rec`. Never raises; unexpected failures land in status=ERROR."""
     rec.status = Recommendation.RUNNING
@@ -32,7 +37,16 @@ def run(rec: Recommendation) -> Recommendation:
     rec.save()
     try:
         hand = rec.hand
-        rec.prompt, rec.snapshot = build_prompt(hand)
+        point = rec.point or None
+        past = is_past(hand, point)
+        actual = {}
+        if past:
+            dp = next((d for d in my_decisions(hand) if d.point == point), None)
+            if dp is None:
+                raise ValueError(f"{hand} has no decision point {point!r}")
+            actual = actual_move(dp)
+        rec.actual, rec.actual_grade = actual, ""
+        rec.prompt, rec.snapshot = build_prompt(hand, point)
         rec.opinions, rec.judgement = [], {}
         rec.save()
         cost = 0.0
@@ -49,14 +63,16 @@ def run(rec: Recommendation) -> Recommendation:
         judgement = {}
         if session and not son["error"]:
             good = [o for o in locals_ if not o["error"]]
-            if good:
-                judgement, c = sonnet.judge(session, locals_, rec.snapshot.get("to_call"))
+            if good or actual:
+                judgement, c = sonnet.judge(session, locals_, rec.snapshot.get("to_call"), actual or None)
                 cost += c
                 log.info("%s: judge preferred=%s cache_read=%s %s", rec, judgement.get("preferred"),
                          judgement.get("cache_read_tokens"), judgement.get("error", ""))
 
         for o in locals_:
             o["grade"] = grading.grade(o, son, rec.snapshot.get("to_call"), rec.snapshot.get("my_stack"))
+        if actual:
+            rec.actual_grade = grading.grade(actual, son, rec.snapshot.get("to_call"), rec.snapshot.get("my_stack"))
         rec.opinions = [son, *locals_]
         rec.judgement = judgement
         rec.concurrence = grading.overall(o["grade"] for o in locals_)
@@ -102,7 +118,10 @@ def due_decisions() -> list[Recommendation]:
             Q(decision_key=f"seq{n}") | Q(decision_key__startswith=f"req-{n}-")
         ).exists():
             continue
-        rec, new = Recommendation.objects.get_or_create(hand=hand, decision_key=decision_key(hand))
+        lp = live_point(hand)
+        rec, new = Recommendation.objects.get_or_create(
+            hand=hand, decision_key=decision_key(hand), defaults={"point": lp.point if lp else ""}
+        )
         if new:
             created.append(rec)
     return created

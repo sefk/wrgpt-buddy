@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from django.conf import settings
 
+from .points import is_past
+from .replay import replay
+
 ROUND_NAMES = {1: "preflop", 2: "flop", 3: "turn", 4: "river"}
 ACTIONS = ["fold", "check", "call", "bet", "raise", "all_in"]
 
@@ -52,7 +55,98 @@ def _committed(actions, me_name, rnd):
     return total
 
 
-def build_prompt(hand) -> tuple[str, dict]:
+def build_prompt(hand, point: str | None = None) -> tuple[str, dict]:
+    """Prompt + snapshot for the live decision (point None or the live point) or a past one."""
+    if is_past(hand, point):
+        return build_past_prompt(hand, point)
+    return build_live_prompt(hand)
+
+
+def _position_line(order, dealer_name, me_name):
+    """`order`: player names in seat order."""
+    if dealer_name not in order or me_name not in order:
+        return None
+    off = (order.index(me_name) - order.index(dealer_name)) % len(order)
+    if off == 0:
+        pos = "on the button (dealer)"
+    else:
+        pos = f"{off} seat(s) after the button (button = 0; small blind = 1, big blind = 2, the last seat before the button is the cutoff)"
+    return f"Your position: {pos}; {len(order)} seats at the table."
+
+
+def build_past_prompt(hand, point: str) -> tuple[str, dict]:
+    """The situation immediately before my decision `point`, with no hindsight.
+
+    Built only from the replay (actions before the decision), my hole cards and the
+    seat list; end-of-hand state (Seat.status, final bankrolls, results, later board
+    cards, later talk) is deliberately not consulted.
+    """
+    rs = replay(hand, point)
+    me = rs.me
+    money = lambda v: "?" if v is None else f"${v:,}"  # noqa: E731
+    names = sorted(rs.seat_numbers, key=rs.seat_numbers.get)
+    snapshot = {
+        "cards": rs.hole_cards,
+        "board": " ".join(rs.board),
+        "pot": rs.pot,
+        "to_call": rs.to_call,
+        "betting_round": rs.street,
+        "next_to_act": me,
+        "my_stack": rs.my_stack,
+    }
+    L = [
+        "Tournament: WRGPT, a slow email no-limit hold'em tournament; decisions take "
+        "hours, so think carefully rather than quickly. Stacks are in dollars.",
+        f"Table {hand.table.name}, hand {hand.number}" + (f", day {hand.day}" if hand.day else "") + ".",
+        f"Betting round: {rs.street}.",
+        "",
+        f"You are {me}. Seats in order (stacks as they stand right now):",
+    ]
+    for n in names:
+        tags = []
+        if n == rs.dealer:
+            tags.append("dealer button")
+        if n == me:
+            tags.append("YOU")
+            tags.append("next to act")
+        st = "in" if rs.in_hand.get(n) else "FOLDED"
+        if n in rs.all_in and rs.in_hand.get(n):
+            st = "ALL IN"
+        L.append(f"  seat {rs.seat_numbers[n]}: {n}  {money(rs.stacks.get(n))}  [{st}]"
+                 + (f"  ({', '.join(tags)})" if tags else ""))
+    L.append(f"Players still in the hand: {sum(1 for v in rs.in_hand.values() if v)}.")
+    pos = _position_line(names, rs.dealer, me)
+    if pos:
+        L.append(pos)
+    L.append("")
+    L.append(f"Your hole cards: {rs.hole_cards or 'unknown'}")
+    L.append(f"Board: {' '.join(rs.board) or '(none yet)'}")
+    L.append(f"Pot: {money(rs.pot)}")
+    L.append(f"Amount to call: {money(rs.to_call)}")
+    if rs.my_stack is not None:
+        L.append(f"Your stack: {money(rs.my_stack)}")
+    L.append(f"Chips you have already committed this betting round: {money(rs.my_committed)}")
+    L.append("")
+    L.append("Action so far:")
+    shown = [a for a in rs.log if a.kind != "players_left"]
+    if not shown:
+        L.append("  (no actions recorded)")
+    last = object()
+    for a in shown:
+        if a.betting_round != last:
+            last = a.betting_round
+            label = ROUND_NAMES.get(a.betting_round, "before the deal") if a.betting_round else "before the deal"
+            L.append(f"{label.capitalize()}:")
+        if a.kind == "table_talk":
+            L.append(f"  [talk] {a.player.name if a.player else '?'}: {a.text}")
+        else:
+            L.append(f"  {a.text}")
+    L.append("")
+    L.append(INSTRUCTIONS)
+    return "\n".join(L), snapshot
+
+
+def build_live_prompt(hand) -> tuple[str, dict]:
     me_name = settings.WRGPT_PLAYER_NAME
     mine = getattr(hand, "mine", None)
     hole = (mine.hole_cards if mine else "") or ""
@@ -108,14 +202,7 @@ def build_prompt(hand) -> tuple[str, dict]:
     live = [s for s in seats if s.status not in ("folded",)]
     L.append(f"Players still in the hand: {len(live)}.")
     if dealer_idx is not None and me_seat is not None:
-        my_idx = seats.index(me_seat)
-        n = len(seats)
-        off = (my_idx - dealer_idx) % n
-        if off == 0:
-            pos = "on the button (dealer)"
-        else:
-            pos = f"{off} seat(s) after the button (button = 0; small blind = 1, big blind = 2, the last seat before the button is the cutoff)"
-        L.append(f"Your position: {pos}; {n} seats at the table.")
+        L.append(_position_line([s.player.name for s in seats], seats[dealer_idx].player.name, me_name))
     L.append("")
 
     L.append(f"Your hole cards: {hole or 'unknown'}")

@@ -49,3 +49,27 @@ def live_point(hand: Hand, me: str | None = None) -> DecisionPoint | None:
     rnd = hand.betting_round or 1
     k = sum(1 for d in my_decisions(hand, me) if d.betting_round == rnd) + 1
     return DecisionPoint(point_name(rnd, k), rnd, k, None)
+
+
+def is_past(hand: Hand, point: str | None, me: str | None = None) -> bool:
+    """True when `point` names a decision that is not the live one (so it needs a replay)."""
+    if not point:
+        return False
+    live = live_point(hand, me)
+    return live is None or live.point != point
+
+
+def actual_move(dp: DecisionPoint) -> dict:
+    """What I actually did at a decision: {action, amount, text}.
+
+    amount is the TOTAL I had in this street for bet/raise (the prompt's convention), else None.
+    """
+    a = dp.action
+    if a is None:
+        return {}
+    amount = None
+    if a.kind == "bet":
+        amount = a.amount
+    elif a.kind == "raise":
+        amount = a.total
+    return {"action": a.kind, "amount": amount, "text": a.text}
