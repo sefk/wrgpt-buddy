@@ -280,3 +280,18 @@ def test_history_table_talk_is_one_event():
     talk = b.history[1]
     assert talk.player == "RiverRat"
     assert talk.text.startswith("Sorry about the delays.")
+
+
+def test_all_in_raise_without_total_keeps_actor():
+    from poker.parsing.broadcast import parse_event
+
+    ev = parse_event("X4 raises $4950 and is all in")
+    assert (ev.kind, ev.player, ev.amount) == (EventKind.ALL_IN, "X4", 4950)
+    ev = parse_event("X1 calls - side pot and is all in")
+    assert (ev.kind, ev.player) == (EventKind.ALL_IN, "X1")
+
+
+def test_status_url_must_be_http():
+    body = TALK_BODY + "! The current status can be found at javascript:alert(1)\n"
+    b = parse_broadcast("[b17.10042][hand:4] Holdem Game Broadcast Message(-> sefk)", body)
+    assert b.status_url is None

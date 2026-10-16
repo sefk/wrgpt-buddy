@@ -19,7 +19,7 @@ _ADDR_RE = re.compile(r"\(\s*->\s*(?P<to>.*?)\s*\)\s*$")
 _HEADER_RE = re.compile(r"^!\s*Table\s+(?P<table>\S+?),\s*Hand\s+(?P<hand>\d+),\s*Day\s+(?P<day>\d+)")
 _HIST_TS_RE = re.compile(r"^(\d\d/\d\d/\d\d \d\d:\d\d:\d\d)!\s?(.*)$")
 _ROW_RE = re.compile(r"^\s*\d+\|")
-_URL_RE = re.compile(r"current status can be found at\s+(\S+)")
+_URL_RE = re.compile(r"current status can be found at\s+(https?://\S+)")  # never javascript: etc.
 
 _MONEY = r"\$(-?[\d,]+)"
 _NAME = r"(?P<p>.+?)"
@@ -49,6 +49,10 @@ def parse_event(text: str, ts: datetime | None = None) -> HandEvent | None:
         ev = parse_event(text, ts)
         if ev and ev.kind != EventKind.OTHER:
             return replace(ev, text=f"{text} and is all in", all_in=True)
+        # e.g. "X4 raises $4950 and is all in" (no "to $N total"): keep the actor
+        if m := re.match(rf"^{_NAME} (?:raises|bets|calls)\b(?:.*?{_MONEY})?", text):
+            amt = _money(m[2]) if m[2] else None
+            return _ev(EventKind.ALL_IN, f"{text} and is all in", ts, player=m["p"], amount=amt, all_in=True)
         return _ev(EventKind.ALL_IN, f"{text} and is all in", ts, all_in=True)
     if text == "Dealing a new hand":
         return _ev(EventKind.NEW_HAND, text, ts)

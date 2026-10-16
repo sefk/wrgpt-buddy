@@ -59,3 +59,8 @@ def test_synthetic_dealer_reminder():
 def test_reply_without_quote():
     m = parse_my_reply("Re: reminder (ID=zzz)[hand:5]", "\n\nraise 200\n")
     assert m.command == "raise 200" and m.quoted is None and m.hand_number == 5
+
+
+def test_reply_with_bare_id_subject():
+    m = parse_my_reply("ID=vimuho [hand:2]", "call\n")
+    assert m.game_id == "vimuho"

@@ -11,7 +11,7 @@ from poker.parsing.types import Board, EmailKind, MyReply, PrivateState
 LA = ZoneInfo("America/Los_Angeles")
 
 _CARD = r"[2-9TJQKA][shdc]"
-_GAME_ID = re.compile(r"\(ID=([^)\s]+)\)")
+_GAME_ID = re.compile(r"\bID=([^)\s\]]+)")  # "(ID=x)" from the dealer, bare "ID=x" from me
 _SUBJ_HAND = re.compile(r"\[hand:(\d+)\]")
 _TABLE = re.compile(r"^!?\s*Table (\w+), Hand (\d+)(?:, Day (\d+))?", re.M)
 _HOLE = re.compile(rf"Your hole cards are:?\s+({_CARD})\s+({_CARD})")
