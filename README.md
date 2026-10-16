@@ -40,8 +40,8 @@ Gunicorn listens on `127.0.0.1:8017`; static files come from whitenoise
 (`staticfiles/`); `tailscale serve` provides tailnet-only HTTPS.
 
 ```sh
-bin/install-launchd     # renders deploy/launchd/*.plist.in, loads both agents
-bin/deploy              # sync, migrate, collectstatic, restart web
+bin/install-launchd     # renders deploy/launchd/*.plist.in, loads all three agents
+bin/deploy              # sync, migrate, collectstatic, restart web and the recommend worker
 bin/status              # launchd state, log tails, last poll result
 bin/uninstall-launchd
 ```
@@ -51,6 +51,11 @@ Agents: `com.sefk.wrgpt-buddy.web` (gunicorn, KeepAlive) and
 `POLL FAILED (exit N)` and the error to `poll.err.log`, and `bin/status`
 reports the non-zero exit. Typical cause: expired Gmail auth, so re-run
 `manage.py gmail_auth`.
+
+`com.sefk.wrgpt-buddy.recommend` (`bin/recommend-worker`, KeepAlive) is the
+recommendation worker described below. It runs under launchd with `HOME` and a
+`PATH` that includes `~/.local/bin` and `/opt/homebrew/bin`, because it shells
+out to the `claude` CLI.
 
 Expose on the tailnet (one-time; port 443 and 8443 are already taken by
 Funnel services, so this uses 10000, which is not public):
@@ -63,9 +68,34 @@ The app is then at <https://studio.tailc33641.ts.net:10000/>. Host and port are
 configurable via `WRGPT_TAILNET_HOST` / `WRGPT_TAILNET_PORT` (used for
 `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS`).
 
+## Recommendations
+
+For each decision point where it is your turn, the app asks three models what to
+do: two local models served by LM Studio (Qwen and gpt-oss) and Sonnet through
+the `claude` CLI, all in parallel. A judge turn then continues the Sonnet
+conversation, reusing its prompt cache, with both local answers added, and
+compares the three. Each local model is graded against Sonnet: agree, same
+action with a different size, or different action. Model names and settings are
+in `buddy/settings.py` (`ADVICE_*`).
+
+The analysis runs automatically but stays hidden. The hand page shows only
+"Ready" until you press Show recommendation. You can also press Request
+analysis (or Retry / Re-analyze when the hand has moved on) to queue one. The
+history page marks revealed results with a dot (all agree) or a diamond
+(disagreement).
+
+```sh
+uv run manage.py recommend              # analyze once, now
+uv run manage.py recommend_worker       # long-running loop that handles queued/automatic requests
+uv run manage.py recommend_worker --once  # a single pass, then exit
+```
+
+The worker is a launchd job (`bin/install-launchd` loads it; `bin/status` shows
+its state and log tails). Logs: `~/Library/Logs/wrgpt-buddy/recommend.{out,err}.log`.
+
 ## Where things live
 
-- Logs: `~/Library/Logs/wrgpt-buddy/{web,poll}.{out,err}.log`
+- Logs: `~/Library/Logs/wrgpt-buddy/{web,poll,recommend}.{out,err}.log`
 - Secrets: `secrets/` (Gmail client and token) and `.env` (Django secret key); both are gitignored
 - Database: `db.sqlite3`
 - Config reference: `.env.example`

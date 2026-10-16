@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply code changes: sync deps, migrate, collectstatic, restart web.
+# Apply code changes: sync deps, migrate, collectstatic, restart web and the recommend worker.
 set -euo pipefail
 . "$(dirname "$0")/_common.sh"
 cd "$ROOT"
@@ -7,9 +7,11 @@ ensure_env
 "$UV" sync
 "$UV" run manage.py migrate --noinput
 "$UV" run manage.py collectstatic --noinput
-if launchctl print "$GUI/$WEB_LABEL" >/dev/null 2>&1; then
-  launchctl kickstart -k "$GUI/$WEB_LABEL"
-  echo "web restarted"
-else
-  echo "web agent not loaded; run bin/install-launchd"
-fi
+for label in "$WEB_LABEL" "$RECOMMEND_LABEL"; do
+  if launchctl print "$GUI/$label" >/dev/null 2>&1; then
+    launchctl kickstart -k "$GUI/$label"
+    echo "$label restarted"
+  else
+    echo "$label not loaded; run bin/install-launchd"
+  fi
+done

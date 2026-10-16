@@ -1,7 +1,7 @@
 {% extends "poker/base.html" %}
 {% load poker_extras %}
 {% block title %}{{ hand.table.name }} hand {{ hand.number }} · WRGPT Buddy{% endblock %}
-{% block head %}{% if is_current and not hand.is_over %}<meta http-equiv="refresh" content="60">{% endif %}{% endblock %}
+{% block head %}{% if analyzing or is_current and not hand.is_over %}<meta http-equiv="refresh" content="60">{% endif %}{% endblock %}
 {% block content %}
 <section class="header">
   <div class="title">
@@ -65,6 +65,8 @@
   {% board hand.board %}
 </section>
 
+{% if not hand.is_over %}{% include "poker/_recommendation.html" %}{% endif %}
+
 <section>
   <h2>Seats</h2>
   <div class="scroll">
@@ -113,10 +115,5 @@
   {% endfor %}
 </section>
 
-<section>
-  <h2>Recommendation</h2>
-  <p class="muted">Analysis from local models and Sonnet will appear here, hidden until you ask.</p>
-  <button type="button" disabled>Show recommendation</button>
-  <span class="muted small">coming later</span>
-</section>
+{% if hand.is_over %}{% include "poker/_recommendation.html" %}{% endif %}
 {% endblock %}

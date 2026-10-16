@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 . "$(dirname "$0")/_common.sh"
-for label in "$WEB_LABEL" "$POLL_LABEL"; do
+for label in "$WEB_LABEL" "$POLL_LABEL" "$RECOMMEND_LABEL"; do
   launchctl bootout "$GUI/$label" 2>/dev/null || true
   rm -f "$AGENTS_DIR/$label.plist"
   echo "removed $label"

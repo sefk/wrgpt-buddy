@@ -6,6 +6,7 @@ LOG_DIR="$HOME/Library/Logs/wrgpt-buddy"
 AGENTS_DIR="$HOME/Library/LaunchAgents"
 WEB_LABEL=com.sefk.wrgpt-buddy.web
 POLL_LABEL=com.sefk.wrgpt-buddy.poll
+RECOMMEND_LABEL=com.sefk.wrgpt-buddy.recommend
 GUI="gui/$(id -u)"
 unset VIRTUAL_ENV
 

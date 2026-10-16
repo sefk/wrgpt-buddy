@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Run the recommendation worker in the foreground (launchd runs this).
+# It shells out to the claude CLI, so HOME and ~/.local/bin must be on PATH.
+set -euo pipefail
+. "$(dirname "$0")/_common.sh"
+cd "$ROOT"
+load_env
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:$PATH"
+exec "$UV" run --no-sync python manage.py recommend_worker "$@"

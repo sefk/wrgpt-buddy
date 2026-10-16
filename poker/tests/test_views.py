@@ -26,7 +26,7 @@ def test_pages_200(imported, client):
     r = client.get(reverse("poker:hand", args=["b17", 2]))
     assert r.status_code == 200
     assert b"Capparella" in r.content
-    assert b"Show recommendation" in r.content
+    assert b"Request analysis" in r.content
 
 
 def test_unknown_hand_404(imported, client):

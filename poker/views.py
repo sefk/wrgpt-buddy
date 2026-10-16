@@ -4,9 +4,11 @@ from collections import OrderedDict
 
 from django.conf import settings
 from django.db.models import Max
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone as djtz
+from django.views.decorators.http import require_POST
 
-from .models import Action, Hand, MyHand
+from .models import Action, Hand, MyHand, Recommendation
 
 ROUND_NAMES = {1: "Preflop", 2: "Flop", 3: "Turn", 4: "River"}
 SHOWS_RE = re.compile(r"^\s*(.+?)\s+has:\s*(.+)$")
@@ -106,7 +108,7 @@ def _detail_context(hand):
     missing = [] if hand.is_over or hand.has_history else hand.missing_sequences()
     my_turn = bool(not hand.is_over and nta == me)
     my_seat = next((r for r in rows if r["is_me"]), None)
-    return {
+    ctx = {
         "hand": hand,
         "round_name": ROUND_NAMES.get(hand.betting_round, ""),
         "mine": mine,
@@ -118,7 +120,105 @@ def _detail_context(hand):
         "missing": missing,
         "next_to_act_name": nta,
         "any_shown": bool(shows),
+        **_recommendation_context(hand, mine),
     }
+    ctx["analyzing"] = bool(ctx["rec"] and ctx["rec"]["status"] in ("pending", "running"))
+    return ctx
+
+
+KEY_SEQ_RE = re.compile(r"^(?:seq|req-)(\d+)")
+GRADE_LABELS = {
+    "agree": ("agree", "agree"),
+    "same_action_different_size": ("different size", "size"),
+    "different_action": ("different action", "action"),
+}
+
+
+def _norm(v):
+    return " ".join(str(v).split()) if v not in (None, "") else ""
+
+
+def _whole(v):
+    if isinstance(v, float) and v.is_integer():
+        return int(v)
+    return v
+
+
+def _is_stale(rec, hand, mine):
+    m = KEY_SEQ_RE.match(rec.decision_key)
+    if m and int(m.group(1)) != hand.last_sequence:
+        return True
+    snap = rec.snapshot or {}
+    current = {"board": hand.board, "pot": hand.pot, "cards": mine.hole_cards if mine else None}
+    for k, cur in current.items():
+        if k in snap and cur is not None and _norm(snap[k]) != _norm(cur):
+            return True
+    return False
+
+
+def _recommendation_context(hand, mine):
+    recs = list(hand.recommendations.all())  # newest first
+    if not recs:
+        return {"rec": None, "older": []}
+    rec = recs[0]
+    now = djtz.now()
+    info = {"obj": rec, "status": rec.status, "revealed": rec.revealed_at is not None}
+    if rec.status in (Recommendation.PENDING, Recommendation.RUNNING):
+        since = rec.started_at or rec.created_at
+        info["minutes"] = max(0, int((now - since).total_seconds() // 60))
+    elif rec.status == Recommendation.DONE:
+        opinions = [dict(o, amount=_whole(o.get("amount"))) for o in rec.opinions or []]
+        info["n_opinions"] = len(opinions)
+        if info["revealed"]:
+            judgement = rec.judgement or {}
+            verdicts = {v.get("model"): v for v in judgement.get("verdicts", [])}
+            disagree = rec.concurrence not in ("agree", "")
+            for o in opinions:
+                label, css = GRADE_LABELS.get(o.get("grade"), ("", ""))
+                o["grade_label"], o["grade_css"] = label, css
+                if disagree:
+                    o["verdict"] = verdicts.get(o.get("label")) or verdicts.get(o.get("model"))
+            info.update(
+                opinions=opinions,
+                judgement=judgement,
+                disagree=disagree,
+                lead=next((o for o in opinions if o.get("label") == "Sonnet"), opinions[0] if opinions else None),
+                stale=_is_stale(rec, hand, mine),
+                snapshot=rec.snapshot or {},
+                cache_read=judgement.get("cache_read_tokens"),
+            )
+    older = []
+    for r in recs[1:]:
+        o = {"obj": r, "status": r.status, "revealed": r.revealed_at is not None}
+        if r.status == Recommendation.DONE and o["revealed"] and r.opinions:
+            first = r.opinions[0]
+            o["headline"] = " ".join(
+                str(x) for x in (first.get("action"), f"${_whole(first['amount']):,}" if first.get("amount") not in (None, "") else "") if x
+            )
+        older.append(o)
+    return {"rec": info, "older": older}
+
+
+def _request_key(hand):
+    return f"req-{hand.last_sequence}-{djtz.now():%Y%m%d%H%M%S%f}"
+
+
+@require_POST
+def request_analysis(request, table, number):
+    hand = get_object_or_404(Hand, table__name=table, number=number)
+    Recommendation.objects.create(
+        hand=hand, decision_key=_request_key(hand), requested=True, status=Recommendation.PENDING
+    )
+    return redirect("poker:hand", table=table, number=number)
+
+
+@require_POST
+def reveal_recommendation(request, table, number, pk):
+    rec = get_object_or_404(Recommendation, pk=pk, hand__table__name=table, hand__number=number)
+    if rec.status == Recommendation.DONE and rec.revealed_at is None:
+        rec.revealed_at = djtz.now()
+        rec.save(update_fields=["revealed_at"])
+    return redirect("poker:hand", table=table, number=number)
 
 
 def current(request):
@@ -148,6 +248,12 @@ def hand_list(request):
         .prefetch_related("seats__player")
         .order_by("table__name", "-number")
     )
+    rec_by_hand = {}
+    for hid, conc in (
+        Recommendation.objects.filter(status=Recommendation.DONE, revealed_at__isnull=False)
+        .order_by("created_at").values_list("hand_id", "concurrence")
+    ):
+        rec_by_hand[hid] = conc
     folded_ids = set(
         Action.objects.filter(kind__in=("fold", "vacation_fold"), player__name=me)
         .values_list("hand_id", flat=True)
@@ -173,6 +279,7 @@ def hand_list(request):
         groups.setdefault(h.table, []).append({
             "hand": h,
             "cards": mine.hole_cards if mine else "",
+            "rec": ("" if h.pk not in rec_by_hand else "agree" if rec_by_hand[h.pk] == "agree" else "differ"),
             "result": result,
             "net": net,
             "winner": h.winner.splitlines()[0] if h.winner else "",

@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$ROOT"
 ensure_env
 mkdir -p "$LOG_DIR" "$AGENTS_DIR"
-for label in "$WEB_LABEL" "$POLL_LABEL"; do
+for label in "$WEB_LABEL" "$POLL_LABEL" "$RECOMMEND_LABEL"; do
   tpl="$ROOT/deploy/launchd/$label.plist.in"
   dest="${PLIST_DEST:-$AGENTS_DIR}/$label.plist"
   sed -e "s|@ROOT@|$ROOT|g" -e "s|@UV@|$UV|g" -e "s|@HOME@|$HOME|g" -e "s|@LOG_DIR@|$LOG_DIR|g" "$tpl" > "$dest"
