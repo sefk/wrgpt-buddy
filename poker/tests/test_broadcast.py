@@ -254,3 +254,29 @@ def test_table_talk_attaches_to_signature():
     assert talk.player == "RiverRat"
     assert talk.text.startswith("Sorry about the delays.")
     assert b.next_to_act == "sefk" and b.to_call == 200
+
+
+HISTORY_TALK_BODY = """! Table b17, Hand 4, Day 4
+
+! RiverRat folds
+! sefk is next to act, $200 to call
+! History of this hand:
+! 10/15/26 13:29:26! Aardvark is on vacation and folds
+_____________________________________________________________________________
+
+! Sorry about the delays. My BET, RAISE, and CALL commands are not registe
+! -- RiverRat --
+_____________________________________________________________________________
+
+! 10/15/26 13:29:26! RiverRat folds
+"""
+
+
+def test_history_table_talk_is_one_event():
+    # The history quotes talk with "!" rather than "%"; it must not become an OTHER line.
+    b = parse_broadcast("[b17.10043][hand:4] Holdem Game Broadcast Message(-> sefk)", HISTORY_TALK_BODY)
+    kinds = [e.kind for e in b.history]
+    assert kinds == [EventKind.VACATION_FOLD, EventKind.TABLE_TALK, EventKind.FOLD]
+    talk = b.history[1]
+    assert talk.player == "RiverRat"
+    assert talk.text.startswith("Sorry about the delays.")

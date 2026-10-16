@@ -179,6 +179,7 @@ def parse_broadcast(subject: str, body: str) -> Broadcast:
     in_row = False
     mode = "pre"  # pre -> after_table -> history -> notes
     talk: list[str] = []  # pending "% ..." table-talk lines, signed by a later "-- Name --"
+    in_rules = False  # between "_____" rules: the history quotes talk there as "! ..." lines
 
     def _with_talk(ev):
         if ev.kind != EventKind.TABLE_TALK:
@@ -209,6 +210,9 @@ def parse_broadcast(subject: str, body: str) -> Broadcast:
         if line.startswith("%") and mode != "done":
             talk.append(line[1:].strip())
             continue
+        if line.startswith("____"):
+            in_rules = not in_rules
+            continue
         if mode == "done" or not line.startswith("!"):
             if line.strip() and mode == "notes":
                 mode = "done"
@@ -221,6 +225,9 @@ def parse_broadcast(subject: str, body: str) -> Broadcast:
             notes.append(text)
             continue
         if mode == "history":
+            if in_rules and not text.startswith("-- "):
+                talk.append(text)
+                continue
             tm = _HIST_TS_RE.match(text)
             ts = None
             if tm:
