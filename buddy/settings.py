@@ -200,3 +200,5 @@ ADVICE_CLAUDE_MODEL = os.environ.get('ADVICE_CLAUDE_MODEL', 'sonnet')
 ADVICE_CLAUDE_CWD = Path(os.environ.get('ADVICE_CLAUDE_CWD', BASE_DIR / '.claude-advice'))
 ADVICE_CLAUDE_TIMEOUT_S = int(os.environ.get('ADVICE_CLAUDE_TIMEOUT_S', '300'))
 ADVICE_WORKER_INTERVAL_S = int(os.environ.get('ADVICE_WORKER_INTERVAL_S', '5'))
+# While this file exists the worker starts no new analyses (bin/deploy waits on it).
+ADVICE_PAUSE_FILE = Path(os.environ.get('ADVICE_PAUSE_FILE', BASE_DIR / '.deploy-pause'))

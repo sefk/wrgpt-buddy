@@ -34,6 +34,9 @@ class Command(BaseCommand):
                 rec = Recommendation.objects.filter(status=Recommendation.PENDING).order_by("created_at", "id").first()
                 if rec is None:
                     break
+                if settings.ADVICE_PAUSE_FILE.exists():
+                    log.info("paused for deploy (%s); %s waits", settings.ADVICE_PAUSE_FILE, rec)
+                    break
                 log.info("running %s", rec)
                 engine.run(rec)
                 log.info("finished %s concurrence=%s cost=%s", rec, rec.concurrence or "-", rec.cost_usd)

@@ -41,7 +41,8 @@ Gunicorn listens on `127.0.0.1:8017`; static files come from whitenoise
 
 ```sh
 bin/install-launchd     # renders deploy/launchd/*.plist.in, loads all three agents
-bin/deploy              # sync, migrate, collectstatic, restart web and the recommend worker
+bin/deploy              # waits for any running analysis (worker paused), then sync, migrate,
+                        # collectstatic, restart web and the recommend worker; --now skips the wait
 bin/status              # launchd state, log tails, last poll result
 bin/uninstall-launchd
 ```

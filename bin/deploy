@@ -1,8 +1,36 @@
 #!/usr/bin/env bash
 # Apply code changes: sync deps, migrate, collectstatic, restart web and the recommend worker.
+#
+# Waits for a safe moment first: it pauses the worker (no new analyses start while
+# .deploy-pause exists) and waits for any running analysis to finish, so the restart
+# never kills one mid-run. Pass --now to skip the wait.
 set -euo pipefail
 . "$(dirname "$0")/_common.sh"
 cd "$ROOT"
+
+now=0
+[ "${1:-}" = "--now" ] && now=1
+
+PAUSE="$ROOT/.deploy-pause"
+trap 'rm -f "$PAUSE"' EXIT
+touch "$PAUSE"
+
+# Running analyses started in the last 30 minutes; older ones are stale and the
+# restarted worker resets them (engine.STALE_AFTER).
+running() {
+  sqlite3 "$ROOT/db.sqlite3" "select id || ' (' || coalesce(table_name, '') || ' hand ' || coalesce(hand_number, '') || ', ' ||
+    cast((julianday('now') - julianday(started_at)) * 1440 as integer) || ' min)'
+    from poker_recommendation where status = 'running' and started_at > datetime('now', '-30 minutes')"
+}
+
+if [ "$now" = 0 ]; then
+  sleep 2  # let a worker pass that was already picking a job mark it running
+  while busy="$(running)" && [ -n "$busy" ]; do
+    echo "$(date +%H:%M:%S) waiting for analysis $busy; worker paused (Ctrl-C to abort, --now to skip)"
+    sleep 15
+  done
+fi
+
 ensure_env
 "$UV" sync
 "$UV" run manage.py migrate --noinput
