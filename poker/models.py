@@ -153,3 +153,50 @@ class MyHand(models.Model):
         if not self.last_error_at:
             return False
         return not self.last_command_at or self.last_error_at > self.last_command_at
+
+
+class Recommendation(models.Model):
+    """Advice for one decision point: local models + Sonnet, then a Sonnet judge turn.
+
+    `opinions` is a list of dicts, one per model, in display order:
+        {"model": "qwen/qwen3.6-35b-a3b", "label": "Qwen", "action": "call",
+         "amount": 600, "reasoning": "...", "error": "", "seconds": 41.2,
+         "grade": "agree" | "same_action_different_size" | "different_action" | ""}
+    `grade` compares each local model with Sonnet (computed in code; Sonnet's own is "").
+    `judgement` is Sonnet's second turn:
+        {"verdicts": [{"model": "Qwen", "concurrence": "...", "evaluation": "..."}],
+         "preferred": "Sonnet" | "Qwen" | "gpt-oss", "summary": "..."}
+    """
+
+    PENDING, RUNNING, DONE, ERROR = "pending", "running", "done", "error"
+    STATUSES = [(s, s) for s in (PENDING, RUNNING, DONE, ERROR)]
+
+    hand = models.ForeignKey(Hand, on_delete=models.CASCADE, related_name="recommendations")
+    decision_key = models.CharField(
+        max_length=100, help_text="identifies the decision point, e.g. 'seq10042'"
+    )
+    requested = models.BooleanField(default=False, help_text="asked for from the UI, not automatic")
+    status = models.CharField(max_length=10, choices=STATUSES, default=PENDING)
+    prompt = models.TextField(blank=True)
+    snapshot = models.JSONField(
+        default=dict, blank=True, help_text="state at analysis time: cards, board, pot, to_call"
+    )
+    opinions = models.JSONField(default=list, blank=True)
+    judgement = models.JSONField(default=dict, blank=True)
+    concurrence = models.CharField(
+        max_length=30, blank=True,
+        help_text="overall: 'agree' if every local model agrees with Sonnet, else the worst grade",
+    )
+    cost_usd = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
+    error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    revealed_at = models.DateTimeField(null=True, blank=True, help_text="when I first looked")
+
+    class Meta:
+        unique_together = [("hand", "decision_key")]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.hand} {self.decision_key} {self.status}"
