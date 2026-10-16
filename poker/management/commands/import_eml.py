@@ -18,9 +18,7 @@ class Command(BaseCommand):
         new = dup = bad = 0
         for f in files:
             try:
-                _, created, parsed = state.ingest(
-                    f.read_bytes(), "eml", fallback_id=f"file:{f.name}"
-                )
+                _, created, parsed = state.ingest(f.read_bytes(), "eml")
             except Exception as exc:  # parse_email shouldn't raise; be safe
                 self.stderr.write(f"{f.name}: ERROR {exc}")
                 bad += 1

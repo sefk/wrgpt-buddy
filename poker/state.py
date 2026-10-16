@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
@@ -265,14 +267,18 @@ def ingest(
     Returns (raw_email, created, parsed).
     """
     parsed = parse_raw_bytes(data)
-    mid = parsed.meta.message_id or fallback_id or f"gmail:{gmail_id}"
-    raw, created = RawEmail.objects.get_or_create(
-        message_id=mid, defaults={"raw": data, "source": source, "gmail_id": gmail_id}
-    )
-    if gmail_id and raw.gmail_id != gmail_id:
-        raw.gmail_id = gmail_id  # first seen as an .eml file, now matched in Gmail
-    refresh_meta(raw, parsed)
-    apply(raw, parsed)
+    mid = (parsed.meta.message_id or fallback_id
+           or (f"gmail:{gmail_id}" if gmail_id else f"sha256:{hashlib.sha256(data).hexdigest()}"))
+    # One transaction: if applying fails (e.g. "database is locked"), the RawEmail row
+    # rolls back too, so the poller doesn't count the message as known and retries it.
+    with transaction.atomic():
+        raw, created = RawEmail.objects.get_or_create(
+            message_id=mid, defaults={"raw": data, "source": source, "gmail_id": gmail_id}
+        )
+        if gmail_id and raw.gmail_id != gmail_id:
+            raw.gmail_id = gmail_id  # first seen as an .eml file, now matched in Gmail
+        refresh_meta(raw, parsed)
+        apply(raw, parsed)
     return raw, created, parsed
 
 
