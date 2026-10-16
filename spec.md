@@ -54,4 +54,10 @@ Presentation: always show every explanation. When they disagree, highlight that 
 - Broadcast sequence numbers (`[b17.10014]`) are consecutive per table, across hands. A gap means a broadcast never arrived; hand 2 lost 10016 and 10025, probably during the Gmail delivery problems the dealer reported on 10/14. Every broadcast carries a full snapshot (pot, board, seat table, next to act), so current state stays correct even when one is lost. Only the action log has holes, and the end-of-hand history fills them. The UI flags hands with missing broadcasts. If this keeps happening, the `WHAT` command or hands.wrgpt.org can be used to recover.
 - My replies are dealer commands, often sent in advance (`CALL *`, `MAKE $x`, `IF/B<=500 CALL *`, sticky `/S`, `/H=<hand>`). They go to dealer@wrgpt.org with `ID=<myid>` in the subject. The full syntax is in [docs/wrgpt-manual.txt][manual], fetched 2026-10-15.
 
+## Future work
+
+Deferred ideas, to reconsider if the problem actually shows up.
+
+- **Decision points can shift when my broadcast is missing** (Codex review, 2026-10-16). A live decision is named by counting my recorded moves on the street (`r1n2` = my 2nd preflop decision). If the broadcast with one of my earlier moves never arrives, the live analysis gets the lower name (`r1n1`). When the end-of-hand history fills the gap, that analysis stays attached to the wrong move and is graded against it. Fix: when the hand ends, re-match live analyses to my decisions by their saved snapshot (pot, to_call), or store the broadcast sequence each one came from. Revisit if an analysis is ever paired with the wrong move.
+
 [manual]: docs/wrgpt-manual.txt
