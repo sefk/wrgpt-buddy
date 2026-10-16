@@ -79,3 +79,27 @@ def test_prompt_has_no_hindsight(h2):
     for future in ("4c", "2h", "Capparella wins", "has:", "sefk folds", "Two_Jacks bets $800", "Kh Jh"):
         assert future not in text, future
     assert "Two_Jacks bets $600" in text and "RiverRat folds" in text
+
+
+@pytest.fixture
+def h2_live_flop(h2):
+    """Hand 2 rewound to my flop decision, as if it were live."""
+    from poker.models import Player
+
+    my_fold = h2.actions.get(player__name="sefk", kind="fold")
+    h2.actions.filter(order__gte=my_fold.order).delete()
+    h2.is_over = False
+    h2.betting_round = 2
+    h2.next_to_act = Player.objects.get(name="sefk")
+    h2.to_call = 600
+    h2.save()
+    return h2
+
+
+def test_live_prompt_uses_current_stack(h2_live_flop):
+    from poker.advice.prompt import build_live_prompt
+
+    text, snap = build_live_prompt(h2_live_flop)
+    # I called $650 preflop from $60,300 at the deal.
+    assert snap["my_stack"] == 60300 - 650
+    assert "Your stack: $59,650" in text

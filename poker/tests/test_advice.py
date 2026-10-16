@@ -105,7 +105,7 @@ def test_prompt_content(my_turn):
     assert snap["betting_round"] == "flop"
     assert snap["next_to_act"] == "sefk"
     assert snap["to_call"] == 400
-    assert snap["my_stack"] == my_turn.seats.get(player__name="sefk").bankroll_start
+    assert snap["my_stack"] == 60300 - 650  # chips behind now, after my preflop call
     for needle in ("Table b17, hand 2", "dealer button", "YOU", "9d 9s", "Amount to call: $400",
                    "Capparella", "Flop:", "TOTAL amount", "slow email tournament"):
         assert needle in text

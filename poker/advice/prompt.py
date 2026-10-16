@@ -153,7 +153,12 @@ def build_live_prompt(hand) -> tuple[str, dict]:
     seats = list(hand.seats.select_related("player").order_by("seat_number"))
     actions = list(hand.actions.select_related("player").order_by("order"))
     me_seat = next((s for s in seats if s.player.name == me_name), None)
-    my_stack = me_seat.bankroll_start if me_seat else None
+    # Chips behind right now: start-of-hand stacks minus everything put in so far.
+    from .replay import _walk
+
+    w = _walk(hand, actions, me_name, None)
+    stacks_now = {n: w["start"][n] - w["total"][n] for n in w["start"]}
+    my_stack = stacks_now.get(me_name) if me_seat else None
 
     i_am_next = bool(hand.next_to_act and hand.next_to_act.name == me_name)
     to_call = hand.to_call if (i_am_next and hand.to_call is not None) else None
@@ -185,7 +190,7 @@ def build_live_prompt(hand) -> tuple[str, dict]:
     L.append("")
 
     dealer_idx = next((i for i, s in enumerate(seats) if s.is_dealer), None)
-    L.append(f"You are {me_name}. Seats in order (stack at the start of the hand):")
+    L.append(f"You are {me_name}. Seats in order (chips behind right now):")
     for i, s in enumerate(seats):
         tags = []
         if s.is_dealer:
@@ -197,7 +202,8 @@ def build_live_prompt(hand) -> tuple[str, dict]:
         st = s.status or "in"
         if st == "folded":
             st = "FOLDED"
-        stack = f"${s.bankroll_start:,}" if s.bankroll_start is not None else "?"
+        behind = stacks_now.get(s.player.name)
+        stack = f"${behind:,}" if behind is not None else "?"
         L.append(f"  seat {s.seat_number}: {s.player.name}  {stack}  [{st}]" + (f"  ({', '.join(tags)})" if tags else ""))
     live = [s for s in seats if s.status not in ("folded",)]
     L.append(f"Players still in the hand: {len(live)}.")
