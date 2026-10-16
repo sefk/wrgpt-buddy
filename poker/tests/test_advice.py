@@ -459,3 +459,9 @@ def test_live_prompt_ignores_a_stale_private_to_call(my_turn):
     MyHand.objects.filter(hand=my_turn).update(to_call=650)
     text, snap = build_prompt(my_turn)
     assert snap["to_call"] == 0 and "Amount to call: $0" in text
+
+
+def test_live_prompt_uses_the_dealers_current_bankroll(my_turn):
+    my_turn.seats.filter(player__name="sefk").update(bankroll_now=12345)
+    text, snap = build_prompt(my_turn)
+    assert snap["my_stack"] == 12345 and "Your stack: $12,345" in text

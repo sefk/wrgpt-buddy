@@ -222,3 +222,11 @@ def test_unquoted_reply_matches_its_hand_number():
     run("r", MyReply("check", 1, "g2", None), 5, EmailKind.MY_REPLY)
     cmds = dict(MyHand.objects.values_list("hand__number", "last_command"))
     assert cmds == {1: "check", 2: ""}
+
+
+def test_bankroll_now_follows_the_latest_broadcast():
+    run("a", bcast(10, seats=(seat(1, "Ann", 900), seat(2, "Bob", 1100))), 0)
+    run("c", bcast(12, seats=(seat(1, "Ann", 500), seat(2, "Bob", 1100))), 2)
+    run("b", bcast(11, seats=(seat(1, "Ann", 700), seat(2, "Bob", 1100))), 1)  # older, arrives late
+    h = Hand.objects.get()
+    assert h.seats.get(player__name="Ann").bankroll_now == 500

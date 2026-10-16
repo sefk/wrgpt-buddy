@@ -159,6 +159,7 @@ def _apply_seats(hand, b):
         seat.seat_number = s.seat
         seat.is_dealer = s.is_dealer
         seat.status = s.status
+        seat.bankroll_now = s.bankroll
         seat.save()
     # The final broadcast's second table is the NEXT hand's seating (the button has
     # moved): take only the ending bankrolls from it.

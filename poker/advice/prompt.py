@@ -146,6 +146,9 @@ def build_live_prompt(hand) -> tuple[str, dict]:
     w = _walk(hand, actions, me_name, None)
     stacks_now = {n: w["start"][n] - w["total"][n] for n in w["start"]}
     my_stack = stacks_now.get(me_name) if me_seat else None
+    # The dealer's latest seat table is authoritative; the log can have missing broadcasts.
+    if me_seat and me_seat.bankroll_now is not None:
+        my_stack = me_seat.bankroll_now
 
     i_am_next = bool(hand.next_to_act and hand.next_to_act.name == me_name)
     if i_am_next:

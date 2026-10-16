@@ -99,6 +99,9 @@ class Seat(models.Model):
     seat_number = models.PositiveIntegerField()
     bankroll_start = models.IntegerField(null=True, blank=True)
     bankroll_end = models.IntegerField(null=True, blank=True)
+    bankroll_now = models.IntegerField(
+        null=True, blank=True, help_text="bankroll in the latest broadcast's seat table (chips behind now)"
+    )
     is_dealer = models.BooleanField(default=False)
     status = models.CharField(max_length=20, blank=True)
 
