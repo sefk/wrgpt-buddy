@@ -109,7 +109,11 @@ code { font-size: .88em; word-break: break-all; }
 .rec-foot .stale { color: var(--warn-fg); background: var(--warn-bg); border-radius: 8px; padding: 6px 10px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .rec-foot .stale form { margin: 0; }
 .older { margin-top: 12px; font-size: .9rem; } .older ul { margin: 6px 0 0; padding-left: 1.2em; }
-.rec-ind { text-align: center; } .rec-agree { color: var(--pos); } .rec-differ { color: #d97706; }
+.rec-ind { text-align: center; }
+.recgrid { display: inline-grid; grid-template-columns: auto repeat(3, 1em); gap: 0 3px; font-size: .75rem; line-height: 1.25; text-align: center; }
+.recgrid b { font-weight: 600; color: var(--muted); padding-right: 2px; }
+.recgrid i { font-style: normal; cursor: default; }
+.rg-agree { color: var(--pos); } .rg-size { color: #d97706; } .rg-differ { color: var(--neg); }
 
 /* Per-decision analysis in the action log */
 .log li.has-pt { flex-wrap: wrap; }

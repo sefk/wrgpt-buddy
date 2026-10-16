@@ -24,7 +24,7 @@ def _amount(op, my_stack):
     return op.get("amount")
 
 
-def grade(local: dict, sonnet: dict, to_call=None, my_stack=None) -> str:
+def grade(local: dict, sonnet: dict, to_call=None, my_stack=None, tolerance=AMOUNT_TOLERANCE) -> str:
     if local.get("error") or sonnet.get("error") or not local.get("action") or not sonnet.get("action"):
         return ""
     fl, fs = _family(local["action"], to_call), _family(sonnet["action"], to_call)
@@ -37,7 +37,7 @@ def grade(local: dict, sonnet: dict, to_call=None, my_stack=None) -> str:
         return AGREE
     if a is None or b is None:
         return SIZE
-    if max(a, b) == 0 or abs(a - b) / max(a, b) <= AMOUNT_TOLERANCE:
+    if max(a, b) == 0 or abs(a - b) / max(a, b) <= tolerance:
         return AGREE
     return SIZE
 

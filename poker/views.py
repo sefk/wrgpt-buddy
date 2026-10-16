@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.utils import timezone as djtz
 from django.views.decorators.http import require_POST
 
+from .advice import grading
 from .advice.points import live_point, my_decisions
 from .models import Action, Hand, MyHand, Recommendation
 
@@ -388,6 +389,55 @@ def hand_detail(request, table, number):
     return render(request, "poker/hand_detail.html", ctx)
 
 
+HISTORY_MODELS = ("Sonnet", "Qwen", "gpt-oss")
+ROUND_LETTERS = {1: "P", 2: "F", 3: "T", 4: "R"}
+HISTORY_TOLERANCE = 0.5  # model and I "agree" when our amounts are within 50%
+HISTORY_GRADE_CSS = {grading.AGREE: "agree", grading.SIZE: "size", grading.DIFFERENT: "differ"}
+HISTORY_GRADE_WORDS = {grading.AGREE: "agrees", grading.SIZE: "same action, different size",
+                       grading.DIFFERENT: "different action"}
+POINT_RE = re.compile(r"^r(\d+)n\d+$")
+
+
+def _history_grades():
+    """{hand_pk: [{letter, cells: [{css, title} | None per HISTORY_MODELS]}]}: one row per
+    betting round, grading each model against what I actually did there. A round with
+    several of my decisions shows each model's worst grade; the newest analysis of a
+    decision wins."""
+    latest = {}
+    for rec in (
+        Recommendation.objects.filter(status=Recommendation.DONE, hand__isnull=False)
+        .exclude(actual={}).order_by("created_at")
+    ):
+        latest[(rec.hand_id, rec.point)] = rec
+    worst = {}  # (hand, round) -> {label: (grade, title)}
+    for (hid, point), rec in latest.items():
+        m = POINT_RE.match(point)
+        if not m:
+            continue
+        cells = worst.setdefault((hid, int(m[1])), {})
+        snap = rec.snapshot or {}
+        for o in rec.opinions:
+            g = grading.grade(o, rec.actual, snap.get("to_call"), snap.get("my_stack"), HISTORY_TOLERANCE)
+            if not g:
+                continue
+            title = f"{o['label']}: {_headline(o)} ({HISTORY_GRADE_WORDS[g]}; you {_headline(rec.actual)})"
+            prev = cells.get(o["label"])
+            if prev is None or grading.overall([g, prev[0]]) != prev[0]:  # g is worse
+                cells[o["label"]] = (g, title)
+    out = {}
+    for (hid, rnd), cells in sorted(worst.items()):
+        if not cells:
+            continue
+        out.setdefault(hid, []).append({
+            "letter": ROUND_LETTERS.get(rnd, str(rnd)),
+            "cells": [
+                {"css": HISTORY_GRADE_CSS[cells[lbl][0]], "title": cells[lbl][1]} if lbl in cells else None
+                for lbl in HISTORY_MODELS
+            ],
+        })
+    return out
+
+
 def hand_list(request):
     me = _me()
     current = current_hand()
@@ -396,13 +446,7 @@ def hand_list(request):
         .prefetch_related("seats__player")
         .order_by("table__name", "-number")
     )
-    rec_by_hand = {}
-    for hid, conc, revealed, actual in (
-        Recommendation.objects.filter(status=Recommendation.DONE, hand__isnull=False)
-        .order_by("created_at").values_list("hand_id", "concurrence", "revealed_at", "actual")
-    ):
-        if revealed is not None or actual:  # past points count as revealed
-            rec_by_hand[hid] = conc
+    rec_by_hand = _history_grades()
     folded_ids = set(
         Action.objects.filter(kind__in=("fold", "vacation_fold"), player__name=me)
         .values_list("hand_id", flat=True)
@@ -428,7 +472,7 @@ def hand_list(request):
         groups.setdefault(h.table, []).append({
             "hand": h,
             "cards": mine.hole_cards if mine else "",
-            "rec": ("" if h.pk not in rec_by_hand else "agree" if rec_by_hand[h.pk] == "agree" else "differ"),
+            "rec": rec_by_hand.get(h.pk, []),
             "result": result,
             "net": net,
             "winner": h.winner.splitlines()[0] if h.winner else "",

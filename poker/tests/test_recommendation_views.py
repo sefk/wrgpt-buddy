@@ -269,21 +269,35 @@ def test_unplaceable_rows_under_unknown_analyses(hand, client):
 
 # --- history ----------------------------------------------------------------------------------
 
-def test_history_indicator(hand, client):
-    assert "rec-agree" not in client.get("/hands/").content.decode()
-    rec = done(hand, agree=True, revealed=False)
+def _grid(client):
     body = client.get("/hands/").content.decode()
-    assert "rec-agree" not in body and "rec-differ" not in body
-    Recommendation.objects.filter(pk=rec.pk).update(revealed_at=timezone.now())
-    assert 'class="rec-agree"' in client.get("/hands/").content.decode()
-    Recommendation.objects.filter(pk=rec.pk).update(concurrence="different_action")
-    assert 'class="rec-differ"' in client.get("/hands/").content.decode()
+    return body[body.index('<span class="recgrid">'):] if "recgrid" in body else ""
 
 
-def test_history_counts_past_points_as_revealed(hand, client):
-    past(hand)  # revealed_at set by done(); clear it: past points count anyway
-    Recommendation.objects.update(revealed_at=None)
-    assert 'class="rec-differ"' in client.get("/hands/").content.decode()
+def test_history_grid_grades_each_model_against_my_move(hand, client):
+    raise_to = lambda amt: {"action": "raise", "amount": amt, "text": f"sefk raises to ${amt}"}
+    done(hand, agree=False, decision_key="a", point="r1n1", actual=raise_to(500))   # 600 is within 50%
+    done(hand, agree=False, decision_key="b", point="r2n1", actual=raise_to(1500))  # 600 is not
+    grid = _grid(client)
+    assert grid.index("<b>P</b>") < grid.index("<b>F</b>")
+    pre, flop = grid.split("<b>F</b>")
+    assert pre.count("rg-agree") == 2 and pre.count("rg-differ") == 1
+    assert flop.count("rg-size") == 2 and flop.count("rg-differ") == 1
+    assert 'title="Sonnet: raise $600 (agrees; you raise $500)"' in pre
+    assert 'title="gpt-oss: fold (different action; you raise $1,500)"' in flop
+
+
+def test_history_grid_shows_worst_of_a_rounds_decisions(hand, client):
+    done(hand, agree=False, decision_key="a", point="r2n1",
+         actual={"action": "raise", "amount": 600, "text": "sefk raises to $600"})
+    done(hand, agree=False, decision_key="b", point="r2n2", actual={"action": "fold", "text": "sefk folds"})
+    flop = _grid(client).split("<b>F</b>")[1]
+    assert flop.count("rg-differ") == 3
+
+
+def test_history_grid_skips_unacted_decisions(hand, client):
+    done(hand, agree=True, revealed=True)  # live-style: no actual move yet
+    assert _grid(client) == ""
 
 
 def _running_rec(hand, **kw):
