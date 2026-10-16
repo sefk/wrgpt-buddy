@@ -12,6 +12,11 @@ for label in "$WEB_LABEL" "$POLL_LABEL" "$RECOMMEND_LABEL"; do
   plutil -lint "$dest" >/dev/null
   [ -n "${PLIST_DEST:-}" ] && { echo "rendered $dest"; continue; }
   launchctl bootout "$GUI/$label" 2>/dev/null || true
-  launchctl bootstrap "$GUI" "$dest"
+  # bootout is asynchronous; bootstrap fails with "5: Input/output error" until it finishes.
+  for attempt in 1 2 3 4 5; do
+    launchctl bootstrap "$GUI" "$dest" 2>/dev/null && break
+    [ "$attempt" = 5 ] && { echo "bootstrap failed for $label" >&2; exit 1; }
+    sleep 1
+  done
   echo "loaded $label"
 done
