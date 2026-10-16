@@ -292,4 +292,20 @@ def rebuild_all(parse=parse_raw) -> int:
     for raw in RawEmail.objects.order_by("sent_at", "id"):
         apply(raw, parse(raw))
         n += 1
+    relink_recommendations()
+    return n
+
+
+def relink_recommendations() -> int:
+    """Reattach recommendations (whose hand FK was nulled by a rebuild) by table + hand number."""
+    from .models import Recommendation
+
+    hands = {(h.table.name, h.number): h for h in Hand.objects.select_related("table")}
+    n = 0
+    for rec in Recommendation.objects.filter(hand=None).exclude(table_name=""):
+        hand = hands.get((rec.table_name, rec.hand_number))
+        if hand:
+            rec.hand = hand
+            rec.save(update_fields=["hand"])
+            n += 1
     return n

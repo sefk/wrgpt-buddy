@@ -165,13 +165,32 @@ class Recommendation(models.Model):
     `grade` compares each local model with Sonnet (computed in code; Sonnet's own is "").
     `judgement` is Sonnet's second turn:
         {"verdicts": [{"model": "Qwen", "concurrence": "...", "evaluation": "..."}],
-         "preferred": "Sonnet" | "Qwen" | "gpt-oss", "summary": "..."}
+         "preferred": "Sonnet" | "Qwen" | "gpt-oss", "summary": "...",
+         "on_actual": "comment on what I actually did (past points only, else empty)"}
     """
 
     PENDING, RUNNING, DONE, ERROR = "pending", "running", "done", "error"
     STATUSES = [(s, s) for s in (PENDING, RUNNING, DONE, ERROR)]
 
-    hand = models.ForeignKey(Hand, on_delete=models.CASCADE, related_name="recommendations")
+    # Hands are deleted and rebuilt by `reparse`; recommendations cost money, so they
+    # survive that: the FK nulls out and state.rebuild_all() relinks by the natural key.
+    hand = models.ForeignKey(
+        Hand, null=True, blank=True, on_delete=models.SET_NULL, related_name="recommendations"
+    )
+    table_name = models.CharField(max_length=20, blank=True)
+    hand_number = models.PositiveIntegerField(null=True, blank=True)
+    point = models.CharField(
+        max_length=20, blank=True,
+        help_text="my decision point: 'r<betting_round>n<k>' = my k-th decision on that street "
+        "(see poker.advice.points). Blank for legacy rows.",
+    )
+    actual = models.JSONField(
+        default=dict, blank=True,
+        help_text="past points only: what I actually did {action, amount, text}",
+    )
+    actual_grade = models.CharField(
+        max_length=30, blank=True, help_text="my actual move graded against Sonnet"
+    )
     decision_key = models.CharField(
         max_length=100, help_text="identifies the decision point, e.g. 'seq10042'"
     )
@@ -195,8 +214,14 @@ class Recommendation(models.Model):
     revealed_at = models.DateTimeField(null=True, blank=True, help_text="when I first looked")
 
     class Meta:
-        unique_together = [("hand", "decision_key")]
+        unique_together = [("table_name", "hand_number", "decision_key")]
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.hand} {self.decision_key} {self.status}"
+        return f"{self.table_name} hand {self.hand_number} {self.point or self.decision_key} {self.status}"
+
+    def save(self, *args, **kwargs):
+        if self.hand_id and not self.table_name:
+            self.table_name = self.hand.table.name
+            self.hand_number = self.hand.number
+        super().save(*args, **kwargs)
