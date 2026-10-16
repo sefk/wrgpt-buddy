@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -243,14 +243,27 @@ def test_disagreement_callout_in_live_row(hand, client):
     assert body.index("GPT-REASON") < body.index("JUDGE-EVAL-GPT")
 
 
-# --- other analyses -------------------------------------------------------------------------
+# --- analyses with no decision point ---------------------------------------------------------
 
-def test_unmatched_legacy_rows_under_other_analyses(hand, client):
-    done(hand, decision_key="seq1")
-    done(hand, decision_key="odd", point="r7n7")
+def test_unmatched_rows_inline_after_last_action_they_saw(hand, client):
+    rec = done(hand, decision_key="seq1")
+    acts = list(hand.actions.exclude(timestamp=None).filter(kind__in=("blind", "fold", "call", "check")).order_by("order"))
+    first, second = acts[0], next(a for a in acts if a.timestamp > acts[0].timestamp)
+    Recommendation.objects.filter(pk=rec.pk).update(created_at=first.timestamp)
     body = body_of(client, hand)
-    assert "Other analyses (2)" in body
-    assert body.index("Other analyses") > body.index('id="pt-r2n1"')
+    assert "Analysis of the hand as of here" in body and "SONNET-REASON" in body
+    note = body.index("Analysis of the hand as of here")
+    assert body.index(first.text) < note < body.index(second.text, body.index(first.text))
+    assert "Unknown analyses" not in body
+
+
+def test_unplaceable_rows_under_unknown_analyses(hand, client):
+    for key, point in (("seq1", ""), ("odd", "r7n7")):
+        rec = done(hand, decision_key=key, point=point)
+        Recommendation.objects.filter(pk=rec.pk).update(created_at=datetime(2000, 1, 1, tzinfo=UTC))
+    body = body_of(client, hand)
+    assert "Unknown analyses (2)" in body and "Other analyses" not in body
+    assert body.index("Unknown analyses") > body.index('id="pt-r2n1"')
     assert "SONNET-REASON" in body
 
 

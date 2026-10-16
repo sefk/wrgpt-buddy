@@ -104,10 +104,12 @@
   <ul class="log">
     {% for item in st.actions %}{% with a=item.a pt=item.pt %}
     <li class="k-{{ a.kind }}{% if a.player.name == me %} me{% endif %}{% if pt %} has-pt{% endif %}">
-      {% if a.timestamp %}<time>{{ a.timestamp|date:"M j g:i a" }}</time>{% endif %}
+      <time>{% if a.timestamp %}{{ a.timestamp|date:"M j g:i a" }}{% endif %}</time>
       {% if a.kind == "table_talk" %}<span class="talk"><b>{{ a.player.name }}</b> says: “{{ a.text }}”</span>{% else %}<span>{{ a.text|inline_cards }}</span>{% endif %}
-      {% if pt %}{% include "poker/_pt_control.html" %}{% endif %}
+      {% if pt and pt.past and not pt.rec and not pt.older %}<span class="ask-right" id="{{ pt.anchor }}">{% include "poker/_ask_form.html" with label="Ask models" point=pt.point %}</span>
+      {% elif pt %}{% include "poker/_pt_control.html" %}{% endif %}
     </li>
+    {% for r in item.notes %}{% include "poker/_unplaced_rec.html" %}{% endfor %}
     {% endwith %}{% endfor %}
   </ul>
   {% empty %}
@@ -119,10 +121,11 @@
     {% with pt=live %}{% include "poker/_pt_control.html" %}{% endwith %}
   </div>
   {% endif %}
-  {% if other %}
+  {% if unknown %}
   <details class="older other">
-    <summary>Other analyses ({{ other|length }})</summary>
-    {% for r in other %}
+    <summary>Unknown analyses ({{ unknown|length }})</summary>
+    <p class="small muted">Older analyses not tied to one of your moves, from before any logged action.</p>
+    {% for r in unknown %}
     <div class="other-item">
       <p class="small muted">{{ r.obj.created_at|date:"M j, g:i a" }} &middot; {{ r.label }} &middot; {{ r.status }}</p>
       {% if r.status == "done" %}{% include "poker/_opinions.html" with r=r %}

@@ -125,9 +125,13 @@ def _detail_context(hand, open_point=""):
         "any_shown": bool(shows),
     }
     by_action, live_entry, other, analyzing = _point_entries(hand, mine, open_point)
+    shown = [a for st in street_list for a in st["actions"]]
+    at_action, unknown = _place_by_time(other, shown)
     for st in street_list:
-        st["actions"] = [{"a": a, "pt": by_action.get(a.pk)} for a in st["actions"]]
-    ctx.update(live=live_entry, other=other, analyzing=analyzing)
+        st["actions"] = [
+            {"a": a, "pt": by_action.get(a.pk), "notes": at_action.get(a.pk, [])} for a in st["actions"]
+        ]
+    ctx.update(live=live_entry, unknown=unknown, analyzing=analyzing)
     return ctx
 
 
@@ -277,6 +281,23 @@ def _point_entries(hand, mine, open_point=""):
     other.sort(key=lambda o: o["obj"].created_at, reverse=True)
     analyzing = any(r.status in (Recommendation.PENDING, Recommendation.RUNNING) for r in recs)
     return by_action, live_entry, other, analyzing
+
+
+def _place_by_time(entries, actions):
+    """Attach analyses with no decision point to the last action logged before each ran.
+
+    Returns ({action_pk: [entry, ...]}, unplaced) -- unplaced when no action is timestamped
+    at or before the analysis.
+    """
+    placed, unplaced = {}, []
+    timed = [a for a in actions if a.timestamp]
+    for e in sorted(entries, key=lambda e: e["obj"].created_at):
+        before = [a for a in timed if a.timestamp <= e["obj"].created_at]
+        if before:
+            placed.setdefault(before[-1].pk, []).append(e)
+        else:
+            unplaced.append(e)
+    return placed, unplaced
 
 
 def _redirect_back(table, number, point=""):

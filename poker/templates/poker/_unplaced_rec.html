@@ -1,0 +1,11 @@
+{# an analysis with no decision point, shown after the last action it could have seen; context: r (rec info) #}
+<li class="note">
+  <time>{{ r.obj.created_at|date:"M j g:i a" }}</time>
+  <details class="models">
+    <summary><span class="sum-label">Analysis of the hand as of here:</span>
+      {% if r.status == "done" %}{% for o in r.opinions %}<span class="sum-op">{{ o.label }} {% if o.action %}{{ o.headline }}{% else %}&ndash;{% endif %}</span>{% if not forloop.last %} &middot; {% endif %}{% endfor %}{% else %}{{ r.status }}{% endif %}
+    </summary>
+    {% if r.status == "done" %}{% include "poker/_opinions.html" with r=r %}
+    {% elif r.status == "error" %}<pre class="rec-pre">{{ r.obj.error }}</pre>{% endif %}
+  </details>
+</li>
