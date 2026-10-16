@@ -15,12 +15,12 @@ PAUSE="$ROOT/.deploy-pause"
 trap 'rm -f "$PAUSE"' EXIT
 touch "$PAUSE"
 
-# Running analyses started in the last 30 minutes; older ones are stale and the
-# restarted worker resets them (engine.STALE_AFTER).
+# Running analyses started in the last 45 minutes (engine.STALE_AFTER); older ones
+# are stuck, and the restarted worker re-queues them.
 running() {
   sqlite3 "$ROOT/db.sqlite3" "select id || ' (' || coalesce(table_name, '') || ' hand ' || coalesce(hand_number, '') || ', ' ||
     cast((julianday('now') - julianday(started_at)) * 1440 as integer) || ' min)'
-    from poker_recommendation where status = 'running' and started_at > datetime('now', '-30 minutes')"
+    from poker_recommendation where status = 'running' and started_at > datetime('now', '-45 minutes')"
 }
 
 if [ "$now" = 0 ]; then

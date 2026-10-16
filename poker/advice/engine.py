@@ -18,7 +18,11 @@ from .points import actual_move, is_past, live_point, my_decisions
 from .prompt import build_prompt
 
 log = logging.getLogger("poker.advice")
-STALE_AFTER = timedelta(minutes=30)
+STALE_AFTER = timedelta(minutes=45)  # longer than a run can take: 2 local + 2 Claude timeouts
+# What run() writes. Never hand/table_name/hand_number: `reparse` may relink the row
+# to a rebuilt Hand mid-run, and a full save would write back the deleted hand id.
+RESULT_FIELDS = ["status", "started_at", "finished_at", "error", "actual", "actual_grade", "prompt",
+                 "snapshot", "opinions", "judgement", "steps", "concurrence", "cost_usd"]
 BACKFILL_PREFIX = "backfill-"  # decision_key of analyses queued in bulk; they run after everything else
 
 
@@ -82,7 +86,7 @@ def run(rec: Recommendation) -> Recommendation:
     rec.started_at = timezone.now()
     rec.error = ""
     _init_steps(rec)
-    rec.save()
+    rec.save(update_fields=RESULT_FIELDS)
     try:
         hand = rec.hand
         point = rec.point or None
@@ -96,7 +100,7 @@ def run(rec: Recommendation) -> Recommendation:
         rec.actual, rec.actual_grade = actual, ""
         rec.prompt, rec.snapshot = build_prompt(hand, point)
         rec.opinions, rec.judgement = [], {}
-        rec.save()
+        rec.save(update_fields=RESULT_FIELDS)
         cost = 0.0
 
         # Locals first, one at a time (memory), then Sonnet and the judge back to
@@ -148,7 +152,10 @@ def run(rec: Recommendation) -> Recommendation:
         rec.error = traceback.format_exc()
         log.exception("%s failed", rec)
     rec.finished_at = timezone.now()
-    rec.save()
+    try:
+        rec.save(update_fields=RESULT_FIELDS)
+    except Exception:  # noqa: BLE001 - run() never raises; the worker resets it as stale
+        log.exception("%s: could not save the result", rec)
     return rec
 
 
@@ -188,8 +195,11 @@ def due_decisions() -> list[Recommendation]:
     return created
 
 
-def reset_stale() -> int:
-    cutoff = timezone.now() - STALE_AFTER
-    return Recommendation.objects.filter(status=Recommendation.RUNNING, started_at__lt=cutoff).update(
-        status=Recommendation.PENDING
-    )
+def reset_stale(everything: bool = False) -> int:
+    """Put RUNNING rows back to PENDING: those older than STALE_AFTER, or all of them
+    (at worker startup: the worker is the only long-lived runner, so a RUNNING row then
+    belongs to a process that died)."""
+    qs = Recommendation.objects.filter(status=Recommendation.RUNNING)
+    if not everything:
+        qs = qs.filter(started_at__lt=timezone.now() - STALE_AFTER)
+    return qs.update(status=Recommendation.PENDING)

@@ -16,9 +16,9 @@ class Command(BaseCommand):
         parser.add_argument("--once", action="store_true", help="do one pass and exit")
 
     def handle(self, *args, once, **opts):
-        n = engine.reset_stale()
+        n = engine.reset_stale(everything=True)
         if n:
-            log.info("reset %d stale running recommendation(s) to pending", n)
+            log.info("reset %d interrupted recommendation(s) to pending", n)
         while True:
             self.pass_once()
             if once:
@@ -27,9 +27,13 @@ class Command(BaseCommand):
 
     def pass_once(self):
         try:
-            for rec in engine.due_decisions():
-                log.info("due: %s", rec)
+            n = engine.reset_stale()
+            if n:
+                log.info("reset %d stale running recommendation(s) to pending", n)
             while True:
+                # Between every run, so a new turn of mine jumps a long backfill queue.
+                for rec in engine.due_decisions():
+                    log.info("due: %s", rec)
                 rec = engine.queue().first()
                 if rec is None:
                     break

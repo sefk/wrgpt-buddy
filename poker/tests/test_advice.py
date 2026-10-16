@@ -387,3 +387,57 @@ def test_ensure_server_starts_lm_studio_when_down(monkeypatch):
     assert calls and calls[0][1:] == ["server", "start"]
     calls.clear()
     assert local.ensure_server() is True and calls == []  # already up: no-op
+
+
+def test_run_keeps_a_relink_made_mid_run(my_turn, fakes, monkeypatch):
+    # `reparse` can relink the row to a rebuilt Hand while models are thinking; run()'s
+    # saves must not write the old hand id back.
+    other = Hand.objects.exclude(pk=my_turn.pk).first()
+    rec = Recommendation.objects.create(hand=my_turn, decision_key="k")
+    inner = local._post
+
+    def relinking_post(url, payload, timeout):
+        Recommendation.objects.filter(pk=rec.pk).update(hand=other)
+        return inner(url, payload, timeout)
+
+    monkeypatch.setattr(local, "_post", relinking_post)
+    engine.run(rec)
+    rec.refresh_from_db()
+    assert rec.hand_id == other.pk and rec.status == "done" and len(rec.opinions) == 3
+
+
+def test_worker_startup_resets_every_running_row(my_turn, monkeypatch):
+    from django.utils import timezone
+    from poker.management.commands.recommend_worker import Command
+
+    rec = Recommendation.objects.create(hand=my_turn, decision_key="a", status="running",
+                                        started_at=timezone.now())
+    ran = []
+    monkeypatch.setattr(engine, "due_decisions", lambda: [])
+    monkeypatch.setattr(engine, "run", lambda r: ran.append(r.pk) or Recommendation.objects.filter(
+        pk=r.pk).update(status="done"))
+    Command().handle(once=True)
+    assert ran == [rec.pk]
+
+
+def test_worker_checks_for_my_turn_between_queued_runs(my_turn, monkeypatch):
+    from poker.management.commands.recommend_worker import Command
+
+    a = Recommendation.objects.create(hand=my_turn, point="r1n1", decision_key="backfill-a")
+    b = Recommendation.objects.create(hand=my_turn, point="r2n1", decision_key="backfill-b")
+    calls = {"n": 0}
+    live = {}
+
+    def due():
+        calls["n"] += 1
+        if calls["n"] == 2:
+            live["rec"] = Recommendation.objects.create(hand=my_turn, decision_key="seq1")
+            return [live["rec"]]
+        return []
+
+    ran = []
+    monkeypatch.setattr(engine, "due_decisions", due)
+    monkeypatch.setattr(engine, "run", lambda r: ran.append(r.pk) or Recommendation.objects.filter(
+        pk=r.pk).update(status="done"))
+    Command().pass_once()
+    assert ran == [a.pk, live["rec"].pk, b.pk]
