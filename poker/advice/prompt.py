@@ -42,19 +42,6 @@ def _by_street(actions):
     return streets
 
 
-def _committed(actions, me_name, rnd):
-    """Chips I have already put in during betting round `rnd` (best effort)."""
-    total = 0
-    for a in actions:
-        if a.betting_round != rnd or not a.player or a.player.name != me_name:
-            continue
-        if a.kind in ("blind", "call", "bet") and a.amount:
-            total += a.amount
-        elif a.kind == "raise":
-            total = a.total or (total + (a.amount or 0))
-    return total
-
-
 def build_prompt(hand, point: str | None = None) -> tuple[str, dict]:
     """Prompt + snapshot for the live decision (point None or the live point) or a past one."""
     if is_past(hand, point):
@@ -161,9 +148,12 @@ def build_live_prompt(hand) -> tuple[str, dict]:
     my_stack = stacks_now.get(me_name) if me_seat else None
 
     i_am_next = bool(hand.next_to_act and hand.next_to_act.name == me_name)
-    to_call = hand.to_call if (i_am_next and hand.to_call is not None) else None
-    if to_call is None and mine and mine.to_call is not None:
-        to_call = mine.to_call
+    if i_am_next:
+        # "sefk is first to act" carries no amount: an unopened street, $0 to call. An
+        # older private reminder's amount would be stale.
+        to_call = hand.to_call or 0
+    else:
+        to_call = mine.to_call if mine else None
     pot = hand.pot if hand.pot is not None else (mine.pot if mine else None)
     rnd = hand.betting_round
     rname = ROUND_NAMES.get(rnd, f"round {rnd}") if rnd else "unknown"
@@ -218,7 +208,8 @@ def build_live_prompt(hand) -> tuple[str, dict]:
     if my_stack is not None:
         L.append(f"Your stack: ${my_stack:,}")
     if rnd:
-        L.append(f"Chips you have already committed this betting round: ${_committed(actions, me_name, rnd):,}")
+        committed = w["street"].get(me_name, 0) if w["rnd"] == rnd else 0  # nothing yet on a new street
+        L.append(f"Chips you have already committed this betting round: ${committed:,}")
     if mine:
         if mine.advance_action:
             L.append(f"Pending advance action on file with the dealer: {mine.advance_action}")

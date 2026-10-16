@@ -7,7 +7,7 @@ from django.core.management import call_command
 
 from poker.advice import engine, grading, local, sonnet
 from poker.advice.prompt import build_prompt
-from poker.models import Hand, Recommendation
+from poker.models import Hand, MyHand, Recommendation
 
 FIXTURES = Path(__file__).parent / "fixtures"
 pytestmark = pytest.mark.django_db
@@ -441,3 +441,21 @@ def test_worker_checks_for_my_turn_between_queued_runs(my_turn, monkeypatch):
         pk=r.pk).update(status="done"))
     Command().pass_once()
     assert ran == [a.pk, live["rec"].pk, b.pk]
+
+
+def test_live_prompt_counts_amountless_calls_as_committed(my_turn):
+    call = my_turn.actions.get(player__name="sefk", kind="call", betting_round=1)
+    assert call.amount is None  # the dealer writes "sefk calls"
+    my_turn.actions.filter(order__gt=call.order).delete()
+    my_turn.betting_round = 1
+    my_turn.save()
+    text, _ = build_prompt(my_turn)
+    assert "committed this betting round: $650" in text
+
+
+def test_live_prompt_ignores_a_stale_private_to_call(my_turn):
+    my_turn.to_call = None  # "sefk is first to act": nothing to call
+    my_turn.save()
+    MyHand.objects.filter(hand=my_turn).update(to_call=650)
+    text, snap = build_prompt(my_turn)
+    assert snap["to_call"] == 0 and "Amount to call: $0" in text

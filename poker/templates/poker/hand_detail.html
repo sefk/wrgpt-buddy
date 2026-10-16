@@ -51,7 +51,7 @@
       {% if my_seat.status %}<div><dt>Status</dt><dd>{{ my_seat.status }}</dd></div>{% endif %}
       {% endif %}
       {% if not hand.is_over and my_seat.status != 'folded' %}
-      <div><dt>To call</dt><dd>{% if mine and mine.to_call is not None %}{{ mine.to_call|money }}{% else %}{{ hand.to_call|money }}{% endif %}</dd></div>
+      <div><dt>To call</dt><dd>{% if my_turn %}{{ hand.to_call|default:0|money }}{% elif mine and mine.to_call is not None %}{{ mine.to_call|money }}{% else %}{{ hand.to_call|money }}{% endif %}</dd></div>
       {% endif %}
       {% if mine and mine.advance_action %}
       <div class="wide"><dt>Pending action</dt><dd>{{ mine.advance_action }}{% if mine.advance_sticky %} <span class="pill sticky">sticky</span>{% endif %}</dd></div>
