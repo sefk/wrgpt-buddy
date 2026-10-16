@@ -94,7 +94,9 @@ def test_ask_button_on_each_of_my_decision_rows(hand, client):
 def test_in_progress_inline_and_refreshes(hand, client, status):
     make(hand, point="r1n1", status=status, started_at=timezone.now() - timedelta(minutes=3))
     body = body_of(client, hand)
-    assert "Analyzing" in row_html(body, "r1n1")[:600] and "3 min" in body
+    row = row_html(body, "r1n1")[:1500]
+    assert ("Queued" if status == "pending" else "Analyzing") in row
+    assert "data-progress-url" in row
     assert body.count("Ask models") == 1  # r2n1 still offers it
     assert 'http-equiv="refresh"' in body
 
@@ -269,3 +271,36 @@ def test_history_counts_past_points_as_revealed(hand, client):
     past(hand)  # revealed_at set by done(); clear it: past points count anyway
     Recommendation.objects.update(revealed_at=None)
     assert 'class="rec-differ"' in client.get("/hands/").content.decode()
+
+
+def _running_rec(hand, **kw):
+    from poker.models import Recommendation
+
+    steps = [
+        {"key": "Qwen", "label": "Qwen (local)", "status": "done", "detail": "call", "seconds": 38.6},
+        {"key": "gpt-oss", "label": "gpt-oss (local)", "status": "running", "started": "2026-10-16T04:00:00+00:00"},
+        {"key": "sonnet", "label": "Sonnet's move", "status": "waiting"},
+        {"key": "judge", "label": "Sonnet judges", "status": "waiting"},
+    ]
+    return Recommendation.objects.create(hand=hand, decision_key="seq1", status="running", steps=steps, **kw)
+
+
+def test_progress_endpoint_shows_steps_and_hides_live_moves(hand, client):
+    rec = _running_rec(hand)  # live-style (no actual, not revealed)
+    data = client.get(f"/hands/b17/2/recommend/{rec.pk}/progress/").json()
+    assert data["status"] == "running"
+    assert [s["status"] for s in data["steps"]] == ["done", "running", "waiting", "waiting"]
+    assert all("detail" not in s for s in data["steps"])  # no peeking at a live decision
+
+    rec.actual = {"action": "call", "amount": None, "text": "sefk calls"}  # past point
+    rec.save()
+    data = client.get(f"/hands/b17/2/recommend/{rec.pk}/progress/").json()
+    assert data["steps"][0]["detail"] == "call"
+
+
+def test_progress_rendered_inline_for_past_point(hand, client):
+    _running_rec(hand, point="r1n1", actual={"action": "call", "amount": None, "text": "sefk calls"})
+    html = client.get("/hands/b17/2/").content.decode()
+    assert "data-progress-url" in html
+    assert "Qwen (local)" in html and "Sonnet judges" in html
+    assert "38.6s" in html

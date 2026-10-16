@@ -199,4 +199,4 @@ ADVICE_CLAUDE_BIN = os.environ.get('ADVICE_CLAUDE_BIN', str(Path.home() / '.loca
 ADVICE_CLAUDE_MODEL = os.environ.get('ADVICE_CLAUDE_MODEL', 'sonnet')
 ADVICE_CLAUDE_CWD = Path(os.environ.get('ADVICE_CLAUDE_CWD', BASE_DIR / '.claude-advice'))
 ADVICE_CLAUDE_TIMEOUT_S = int(os.environ.get('ADVICE_CLAUDE_TIMEOUT_S', '300'))
-ADVICE_WORKER_INTERVAL_S = int(os.environ.get('ADVICE_WORKER_INTERVAL_S', '30'))
+ADVICE_WORKER_INTERVAL_S = int(os.environ.get('ADVICE_WORKER_INTERVAL_S', '5'))

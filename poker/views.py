@@ -4,7 +4,7 @@ from collections import OrderedDict
 
 from django.conf import settings
 from django.db.models import Max
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone as djtz
@@ -175,6 +175,9 @@ def _rec_info(rec, hand, mine, past):
     if rec.status in (Recommendation.PENDING, Recommendation.RUNNING):
         since = rec.started_at or rec.created_at
         info["minutes"] = max(0, int((now - since).total_seconds() // 60))
+        info["steps"] = steps_for(rec, revealed)
+        info["ahead"] = queue_ahead(rec)
+        info["progress_url"] = reverse("poker:progress", args=[hand.table.name, hand.number, rec.pk])
     elif rec.status == Recommendation.DONE:
         opinions = [dict(o, amount=_whole(o.get("amount"))) for o in rec.opinions or []]
         info["n_opinions"] = len(opinions)
@@ -310,6 +313,39 @@ def reveal_recommendation(request, table, number, pk):
         rec.revealed_at = djtz.now()
         rec.save(update_fields=["revealed_at"])
     return _redirect_back(table, number, "live" if rec.point else "")
+
+
+def steps_for(rec, show_moves):
+    """Progress steps for display; a model's move is withheld until I may see it."""
+    from .advice.engine import default_steps
+
+    out = []
+    for st in rec.steps or default_steps():
+        st = dict(st)
+        if not show_moves:
+            st.pop("detail", None)
+        out.append(st)
+    return out
+
+
+def queue_ahead(rec) -> int:
+    """How many analyses the worker will handle before this one."""
+    if rec.status != Recommendation.PENDING:
+        return 0
+    return Recommendation.objects.filter(
+        status__in=(Recommendation.PENDING, Recommendation.RUNNING), created_at__lt=rec.created_at
+    ).count()
+
+
+def recommendation_progress(request, table, number, pk):
+    rec = get_object_or_404(Recommendation, pk=pk, hand__table__name=table, hand__number=number)
+    show_moves = bool(rec.actual) or rec.revealed_at is not None
+    return JsonResponse({
+        "status": rec.status,
+        "ahead": queue_ahead(rec),
+        "started": rec.started_at.isoformat() if rec.started_at else None,
+        "steps": steps_for(rec, show_moves),
+    })
 
 
 def current(request):

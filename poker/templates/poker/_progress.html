@@ -1,0 +1,18 @@
+{# live progress for a pending/running recommendation; context: rec (rec info). Updated by progress.js. #}
+<div class="progress" data-progress-url="{{ rec.progress_url }}">
+  <p class="rec-status">
+    <span class="spin" aria-hidden="true"></span>
+    <span class="p-head">{% if rec.status == "pending" %}Queued{% if rec.ahead %} &middot; {{ rec.ahead }} ahead{% endif %}{% else %}Analyzing&hellip;{% endif %}</span>
+  </p>
+  <ol class="steps">
+    {% for st in rec.steps %}
+    <li class="st-{{ st.status }}" data-started="{{ st.started|default:'' }}">
+      <span class="st-icon" aria-hidden="true"></span>
+      <span class="st-label">{{ st.label }}</span>
+      <span class="st-detail">{% if st.status == "done" %}{{ st.detail|default:"done" }}{% if st.seconds is not None %} &middot; {{ st.seconds }}s{% endif %}{% elif st.status == "error" %}failed{% if st.seconds is not None %} &middot; {{ st.seconds }}s{% endif %}{% elif st.status == "skipped" %}skipped{% elif st.status == "running" %}running&hellip;{% endif %}</span>
+    </li>
+    {% empty %}
+    <li class="st-waiting"><span class="st-icon" aria-hidden="true"></span><span class="st-label">Waiting for the worker to pick this up</span><span class="st-detail"></span></li>
+    {% endfor %}
+  </ol>
+</div>

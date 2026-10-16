@@ -202,6 +202,11 @@ class Recommendation(models.Model):
     )
     opinions = models.JSONField(default=list, blank=True)
     judgement = models.JSONField(default=dict, blank=True)
+    steps = models.JSONField(
+        default=list, blank=True,
+        help_text="progress while running: [{key, label, status: waiting|running|done|error|skipped, "
+        "started, finished (ISO), seconds, detail (the model's move), error}]",
+    )
     concurrence = models.CharField(
         max_length=30, blank=True,
         help_text="overall: 'agree' if every local model agrees with Sonnet, else the worst grade",

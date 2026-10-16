@@ -6,7 +6,7 @@
     {% else %}<p class="muted small">Not analyzed yet. The analysis starts on its own when it is your turn, and stays hidden until you ask.</p>
     {% include "poker/_ask_form.html" with label="Ask models" point=pt.point primary=True %}{% endif %}
   {% elif rec.status == "pending" or rec.status == "running" %}
-    <p class="rec-status"><span class="spin" aria-hidden="true"></span> Analyzing&hellip; {{ rec.minutes }} min <span class="muted small">({% if rec.status == "pending" %}queued{% else %}running{% endif %}; this page refreshes by itself)</span></p>
+    {% include "poker/_progress.html" %}
   {% elif rec.status == "error" %}
     <div class="banner err inline-err" role="alert">Analysis failed.
       <details><summary>Error</summary><pre class="rec-pre">{{ rec.obj.error|default:"(no message)" }}</pre></details>

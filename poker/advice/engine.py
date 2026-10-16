@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import traceback
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -29,11 +29,48 @@ def past_decision_key(point: str) -> str:
     return f"pt-{point}-{timezone.now():%Y%m%d%H%M%S%f}"
 
 
+def default_steps() -> list[dict]:
+    """The four steps of an analysis, all waiting."""
+    return [
+        *({"key": label, "label": f"{label} (local)", "status": "waiting"}
+          for _, label in settings.ADVICE_LOCAL_MODELS),
+        {"key": "sonnet", "label": "Sonnet's move", "status": "waiting"},
+        {"key": "judge", "label": "Sonnet judges", "status": "waiting"},
+    ]
+
+
+def _init_steps(rec):
+    rec.steps = default_steps()
+
+
+def _step(rec, key, status, op=None, error=""):
+    """Record a step's progress and save it right away so the page can show it."""
+    now = timezone.now()
+    for st in rec.steps:
+        if st["key"] != key:
+            continue
+        st["status"] = status
+        if status == "running":
+            st["started"] = now.isoformat()
+        else:
+            st["finished"] = now.isoformat()
+            if st.get("started"):
+                started = datetime.fromisoformat(st["started"])
+                st["seconds"] = round((now - started).total_seconds(), 1)
+        if op is not None:
+            st["detail"] = " ".join(str(x) for x in (op.get("action"), op.get("amount")) if x)
+            error = error or op.get("error", "")
+        if error:
+            st["status"], st["error"] = "error", error[:300]
+    rec.save(update_fields=["steps"])
+
+
 def run(rec: Recommendation) -> Recommendation:
     """Fill in `rec`. Never raises; unexpected failures land in status=ERROR."""
     rec.status = Recommendation.RUNNING
     rec.started_at = timezone.now()
     rec.error = ""
+    _init_steps(rec)
     rec.save()
     try:
         hand = rec.hand
@@ -56,20 +93,29 @@ def run(rec: Recommendation) -> Recommendation:
         locals_ = []
         local.ensure_server(log)
         for model, label in settings.ADVICE_LOCAL_MODELS:
+            _step(rec, label, "running")
             locals_.append(local.ask(model, label, rec.prompt))
+            _step(rec, label, "done", locals_[-1])
             log.info("%s: %s %s in %ss %s", rec, label, locals_[-1]["action"], locals_[-1]["seconds"], locals_[-1]["error"])
+        _step(rec, "sonnet", "running")
         son, session, c = sonnet.recommend(rec.prompt)
+        _step(rec, "sonnet", "done", son)
         cost += c
         log.info("%s: Sonnet %s in %ss %s", rec, son["action"], son["seconds"], son["error"])
         judgement = {}
         if session and not son["error"]:
             good = [o for o in locals_ if not o["error"]]
             if good or actual:
+                _step(rec, "judge", "running")
                 judgement, c = sonnet.judge(session, locals_, rec.snapshot.get("to_call"), actual or None)
+                _step(rec, "judge", "done", error=judgement.get("error", ""))
                 cost += c
                 log.info("%s: judge preferred=%s cache_read=%s %s", rec, judgement.get("preferred"),
                          judgement.get("cache_read_tokens"), judgement.get("error", ""))
 
+        for st in rec.steps:
+            if st["status"] == "waiting":
+                st["status"] = "skipped"
         for o in locals_:
             o["grade"] = grading.grade(o, son, rec.snapshot.get("to_call"), rec.snapshot.get("my_stack"))
         if actual:

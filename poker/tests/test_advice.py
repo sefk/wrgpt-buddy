@@ -157,6 +157,13 @@ def test_engine_full_run(my_turn, fakes):
     assert Path(kw1["cwd"]).is_dir()
     assert "Qwen answered" in c2[-1] and "gpt-oss answered" in c2[-1] and "side with a local model" in c2[-1]
     assert json.loads(flag(c1, "--json-schema"))["required"] == ["recommendation", "judgement"]
+    # every step recorded, in order, with timings and each model's move
+    assert [(st["label"], st["status"]) for st in rec.steps] == [
+        ("Qwen (local)", "done"), ("gpt-oss (local)", "done"),
+        ("Sonnet's move", "done"), ("Sonnet judges", "done"),
+    ]
+    assert all(st["seconds"] is not None and st["started"] for st in rec.steps)
+    assert rec.steps[0]["detail"]
 
 
 def test_engine_sonnet_failure(my_turn, fakes, monkeypatch):
@@ -167,6 +174,7 @@ def test_engine_sonnet_failure(my_turn, fakes, monkeypatch):
     assert rec.status == "done"  # locals still produced advice
     assert rec.opinions[0]["error"].startswith("ClaudeError: claude exited 1")
     assert rec.judgement == {} and rec.concurrence == ""
+    assert [st["status"] for st in rec.steps][2:] == ["error", "skipped"]
 
 
 def test_engine_timeout_and_is_error(my_turn, fakes, monkeypatch):

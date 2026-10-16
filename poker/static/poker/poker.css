@@ -134,3 +134,17 @@ code { font-size: .88em; word-break: break-all; }
 .pt .callout, .other-item .callout { margin: 8px 0 0; }
 [id^="pt-"] { scroll-margin-top: 12px; }
 .callout.partial { color: var(--muted); }
+
+/* Analysis progress steps */
+.progress .steps { list-style: none; margin: .4rem 0 0; padding: 0; }
+.progress .steps li { display: grid; grid-template-columns: 1.4rem 1fr auto; gap: .4rem; align-items: center; padding: .2rem 0; }
+.progress .st-detail { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.progress .st-icon::before { content: "○"; color: var(--muted); }
+.progress .st-running .st-icon::before { content: "◐"; display: inline-block; animation: st-spin 1s linear infinite; color: var(--accent); }
+.progress .st-done .st-icon::before { content: "✓"; color: var(--pos); }
+.progress .st-error .st-icon::before { content: "✗"; color: var(--neg); }
+.progress .st-skipped .st-icon::before { content: "–"; }
+.progress .st-running .st-label { font-weight: 600; }
+.progress .st-waiting .st-label, .progress .st-skipped .st-label { color: var(--muted); }
+@keyframes st-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .progress .st-running .st-icon::before { animation: none; } }
