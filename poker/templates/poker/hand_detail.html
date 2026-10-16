@@ -32,6 +32,8 @@
 </div>
 {% endif %}
 
+<div class="detail-grid">
+<div class="col-state">
 <section class="mine {% if my_turn %}turn{% endif %}">
   <h2>{{ me }}{% if my_turn %} <span class="pill turn">Your turn</span>{% endif %}
     {% if live %}<a class="jump" href="#pt-live">{% if not live.rec %}Ask models{% elif live.rec.status == "pending" or live.rec.status == "running" %}Analyzing&hellip;{% elif live.rec.status == "error" %}Analysis failed{% else %}Recommendation ready{% endif %} &darr;</a>{% endif %}</h2>
@@ -70,15 +72,15 @@
   <h2>Seats</h2>
   <div class="scroll">
   <table class="seats">
-    <thead><tr><th>#</th><th>Player</th><th class="num">Bankroll</th><th class="num">{% if hand.is_over %}Net{% else %}In hand{% endif %}</th><th>Status</th>{% if any_shown %}<th>Shown</th>{% endif %}</tr></thead>
+    <thead><tr><th>#</th><th>Player</th><th class="num">Bankroll</th><th class="num">{% if hand.is_over %}Net{% else %}In hand{% endif %}</th><th class="c-status">Status</th>{% if any_shown %}<th>Shown</th>{% endif %}</tr></thead>
     <tbody>
     {% for r in rows %}
       <tr class="{% if r.is_me %}me{% endif %} {% if r.status == 'folded' %}folded{% endif %}">
         <td>{{ r.seat.seat_number }}{% if r.seat.is_dealer %} <span class="dealer" title="Dealer button">D</span>{% endif %}</td>
-        <td>{% if r.to_act %}<span class="act" title="Next to act">&#9654;</span> {% endif %}{{ r.name }}</td>
+        <td>{% if r.to_act %}<span class="act" title="Next to act">&#9654;</span> {% endif %}{{ r.name }}{% if r.status %}<span class="st-inline">{{ r.status }}</span>{% endif %}</td>
         <td class="num">{{ r.seat.bankroll_start|money }}</td>
         <td class="num">{% if hand.is_over %}<span class="{% if r.delta > 0 %}pos{% elif r.delta < 0 %}neg{% endif %}">{{ r.delta|signed_money }}</span>{% elif r.chips %}{{ r.chips|money }}{% else %}–{% endif %}</td>
-        <td>{{ r.status }}</td>
+        <td class="c-status">{{ r.status }}</td>
         {% if any_shown %}<td>{% if r.shown %}{% cards r.shown %}{% endif %}</td>{% endif %}
       </tr>
     {% empty %}
@@ -97,6 +99,8 @@
 </section>
 {% endif %}
 
+</div>
+<div class="col-log">
 <section>
   <h2>Action log</h2>
   {% for st in streets %}
@@ -135,4 +139,6 @@
   </details>
   {% endif %}
 </section>
+</div>
+</div>
 {% endblock %}

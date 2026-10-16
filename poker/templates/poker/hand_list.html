@@ -12,13 +12,13 @@
     <tbody>
     {% for r in rows %}
       <tr class="{% if r.result == 'folded' %}folded{% endif %}">
-        <td><a href="{% url 'poker:hand' table.name r.hand.number %}">#{{ r.hand.number }}</a>{% if r.live %} <span class="pill live">live</span>{% elif r.unfinished %} <span class="pill over">unfinished</span>{% endif %}</td>
-        <td>{% if r.date %}{{ r.date|date:"M j" }}{% else %}–{% endif %}</td>
-        <td>{% if r.cards %}{% cards r.cards %}{% else %}–{% endif %}</td>
-        <td>{{ r.result|default:"–" }}</td>
-        <td class="num">{% if r.net is not None %}<span class="{% if r.net > 0 %}pos{% elif r.net < 0 %}neg{% endif %}">{{ r.net|signed_money }}</span>{% else %}–{% endif %}</td>
-        <td class="winner-cell">{{ r.winner|default:"–" }}{% if r.nwinners > 1 %} <span class="muted">+{{ r.nwinners|add:"-1" }}</span>{% endif %}</td>
-        <td class="rec-ind">{% if r.rec %}<span class="recgrid">{% for row in r.rec %}<b>{{ row.letter }}</b>{% for c in row.cells %}{% if c %}<i class="rg-{{ c.css }}" title="{{ c.title }}">&#9679;</i>{% else %}<i></i>{% endif %}{% endfor %}{% endfor %}</span>{% endif %}</td>
+        <td class="c-hand"><a href="{% url 'poker:hand' table.name r.hand.number %}">#{{ r.hand.number }}</a>{% if r.live %} <span class="pill live">live</span>{% elif r.unfinished %} <span class="pill over">unfinished</span>{% endif %}</td>
+        <td class="c-date">{% if r.date %}{{ r.date|date:"M j" }}{% else %}–{% endif %}</td>
+        <td class="c-cards">{% if r.cards %}{% cards r.cards %}{% else %}–{% endif %}</td>
+        <td class="c-result">{{ r.result|default:"–" }}</td>
+        <td class="num c-net">{% if r.net is not None %}<span class="{% if r.net > 0 %}pos{% elif r.net < 0 %}neg{% endif %}">{{ r.net|signed_money }}</span>{% else %}–{% endif %}</td>
+        <td class="winner-cell c-winner">{{ r.winner|default:"–" }}{% if r.nwinners > 1 %} <span class="muted">+{{ r.nwinners|add:"-1" }}</span>{% endif %}</td>
+        <td class="rec-ind c-rec">{% if r.rec %}<span class="recgrid">{% for row in r.rec %}<b>{{ row.letter }}</b>{% for c in row.cells %}{% if c %}<i class="rg-{{ c.css }}" title="{{ c.title }}">&#9679;</i>{% else %}<i></i>{% endif %}{% endfor %}{% endfor %}</span>{% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>

@@ -158,3 +158,28 @@ code { font-size: .88em; word-break: break-all; }
 .progress .st-waiting .st-label, .progress .st-skipped .st-label { color: var(--muted); }
 @keyframes st-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .progress .st-running .st-icon::before { animation: none; } }
+
+/* Responsive: wide screens get more room and a two-column hand page */
+.st-inline { display: none; }
+@media (min-width: 1100px) {
+  main { max-width: 1240px; }
+  .detail-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 0 16px; align-items: start; }
+  .detail-grid .col-log > section:first-child, .detail-grid .col-state > section:first-child { margin-top: 12px; }
+}
+/* Narrow screens: history rows become two-line cards; seat status folds under the name */
+@media (max-width: 640px) {
+  main { padding: 8px 8px 24px; }
+  section { padding: 10px 10px; }
+  .hist thead { display: none; }
+  .hist tr { display: grid; grid-template-columns: auto auto 1fr auto auto; grid-template-areas:
+      "hand cards result net rec" "date winner winner winner rec";
+    column-gap: 10px; row-gap: 2px; align-items: center; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+  .hist td { border: 0; padding: 0; }
+  .hist .c-hand { grid-area: hand; } .hist .c-cards { grid-area: cards; } .hist .c-result { grid-area: result; }
+  .hist .c-net { grid-area: net; } .hist .c-rec { grid-area: rec; }
+  .hist .c-date { grid-area: date; font-size: .8rem; color: var(--muted); }
+  .hist .c-winner { grid-area: winner; font-size: .8rem; color: var(--muted); min-width: 0; }
+  .seats .c-status { display: none; }
+  .seats .st-inline { display: block; font-size: .75rem; color: var(--muted); font-weight: 400; }
+  .seats th, .seats td { padding: 6px 5px; }
+}
