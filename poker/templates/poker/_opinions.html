@@ -4,8 +4,8 @@
   <strong>The models disagree{% if r.judgement.preferred %}; the judge prefers {{ r.judgement.preferred }}{% endif %}.</strong>
   {% if r.judgement.summary %}<p>{{ r.judgement.summary }}</p>{% endif %}
 </div>
-{% elif r.lead and r.concurrence == "agree" %}
-<p class="callout agree">All three agree: <strong>{{ r.lead.headline }}</strong></p>
+{% elif r.lead and r.concurrence == "agree" and r.all_answered %}
+<p class="callout agree">All {{ r.opinions|length }} agree: <strong>{{ r.lead.headline }}</strong></p>
 {% elif r.lead %}
 <p class="callout partial">Not every model answered, so there is no comparison.</p>
 {% endif %}

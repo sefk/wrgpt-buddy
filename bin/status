@@ -20,6 +20,7 @@ poll_status() {
   local last_exit; last_exit="$(launchctl print "$GUI/$POLL_LABEL" 2>/dev/null | awk -F'= ' '/last exit code/{print $2; exit}')"
   [ -n "$last_exit" ] && echo "last exit code: $last_exit"
   if [ -n "$last_exit" ] && [ "$last_exit" != "0" ]; then echo "POLL FAILING (see poll.err.log)"; fi
-  grep -E 'POLL (OK|FAILED)' "$LOG_DIR/poll.out.log" "$LOG_DIR/poll.err.log" 2>/dev/null | tail -n 1
+  # bin/poll tees failures to stdout too, so poll.out.log alone is in order
+  grep -E 'POLL (OK|FAILED)' "$LOG_DIR/poll.out.log" 2>/dev/null | tail -n 1
 }
 poll_status

@@ -12,7 +12,7 @@ unset VIRTUAL_ENV
 
 ensure_env() {
   [ -f "$ROOT/.env" ] || cp "$ROOT/.env.example" "$ROOT/.env"
-  if ! grep -q '^DJANGO_SECRET_KEY=[^c ]' "$ROOT/.env" || grep -q '^DJANGO_SECRET_KEY=change-me' "$ROOT/.env"; then
+  if ! grep -Eq '^DJANGO_SECRET_KEY=[^[:space:]]' "$ROOT/.env" || grep -q '^DJANGO_SECRET_KEY=change-me' "$ROOT/.env"; then
     key="$(python3 -c 'import secrets; print(secrets.token_urlsafe(50))')"
     sed -i '' '/^DJANGO_SECRET_KEY=/d' "$ROOT/.env"
     echo "DJANGO_SECRET_KEY=$key" >> "$ROOT/.env"

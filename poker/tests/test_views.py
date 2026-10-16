@@ -41,7 +41,8 @@ def test_empty_db(client):
 
 def test_current_prefers_live_hand(imported, client):
     Hand.objects.update(is_over=True)
-    h1 = h("b17", 1)
+    newest = Hand.objects.filter(table__name="b17").order_by("-number").first()
+    h1 = h("b17", newest.number)
     h1.is_over = False
     h1.last_sequence = 10**6
     h1.save()
@@ -104,3 +105,13 @@ def test_hand_zero_seating_phase_hidden(imported, client):
     Hand.objects.create(table=Table.objects.get(name="b17"), number=0, last_sequence=99999)
     assert "#0<" not in client.get("/hands/").content.decode()
     assert client.get("/").context["hand"].number != 0
+
+
+def test_current_skips_unfinished_hand_with_a_later_hand(imported):
+    from poker.models import Hand
+    from poker.views import current_hand
+
+    Hand.objects.update(is_over=True)
+    Hand.objects.filter(table__name="b17", number=1).update(is_over=False)
+    cur = current_hand()
+    assert (cur.table.name, cur.number) != ("b17", 1)

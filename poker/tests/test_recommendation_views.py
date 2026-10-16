@@ -137,7 +137,7 @@ def test_latest_per_point_and_earlier_list(hand, client):
     new = done(hand, agree=True, decision_key="pt-r1n1-y", point="r1n1")
     seg = row_html(body_of(client, hand), "r1n1")
     assert "Earlier analyses (1)" in seg
-    assert "All three agree" in seg and "ON-ACTUAL" not in seg
+    assert "All 3 agree" in seg and "ON-ACTUAL" not in seg
     assert new.pk
 
 
@@ -331,3 +331,20 @@ def test_progress_rendered_inline_for_past_point(hand, client):
     assert "data-progress-url" in html
     assert "Qwen (local)" in html and "Sonnet judges" in html
     assert "38.6s" in html
+
+
+def test_earlier_live_analyses_stay_hidden_until_revealed(hand, client):
+    live = go_live(hand)
+    hidden = dict(SONNET, amount=777)
+    make(hand, point=live, decision_key="k1", opinions=[hidden, QWEN, GPT], concurrence="agree")
+    make(hand, point=live, decision_key="k2", opinions=[SONNET, QWEN, GPT], concurrence="agree")
+    body = body_of(client, hand)
+    assert "Earlier analyses (1)" in body and "$777" not in body
+
+
+def test_no_consensus_claim_when_a_model_failed(hand, client):
+    live = go_live(hand)
+    failed = dict(GPT, action=None, amount=None, error="timeout", grade="")
+    make(hand, point=live, opinions=[SONNET, QWEN, failed], concurrence="agree", revealed_at=timezone.now())
+    body = body_of(client, hand)
+    assert "agree:" not in body and "Not every model answered" in body

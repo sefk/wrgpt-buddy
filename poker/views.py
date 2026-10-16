@@ -36,7 +36,12 @@ def _recency(h):
 def current_hand():
     """Most recently active hand that isn't over; else the most recent hand."""
     hands = list(_with_activity(Hand.objects.dealt().select_related("table", "next_to_act")))
-    live = [h for h in hands if not h.is_over]
+    newest = {}
+    for h in hands:
+        newest[h.table_id] = max(newest.get(h.table_id, 0), h.number)
+    # A hand whose final broadcast never arrived stays not-over; a later hand on its
+    # table proves it is finished.
+    live = [h for h in hands if not h.is_over and h.number == newest[h.table_id]]
     pool = live or hands
     return max(pool, key=_recency) if pool else None
 
@@ -204,6 +209,7 @@ def _rec_info(rec, hand, mine, past):
                 opinions=opinions,
                 judgement=judgement,
                 disagree=disagree,
+                all_answered=bool(opinions) and all(o.get("action") and not o.get("error") for o in opinions),
                 concurrence=rec.concurrence,
                 lead=next((o for o in opinions if o.get("label") == "Sonnet"), opinions[0] if opinions else None),
                 stale=False if past else _is_stale(rec, hand, mine),
@@ -222,9 +228,9 @@ def _seq_of(rec):
     return int(m.group(1)) if m else None
 
 
-def _older_entry(r):
-    o = {"obj": r, "status": r.status, "revealed": r.revealed_at is not None}
-    if r.status == Recommendation.DONE and r.opinions:
+def _older_entry(r, past):
+    o = {"obj": r, "status": r.status, "revealed": past or r.revealed_at is not None}
+    if r.status == Recommendation.DONE and r.opinions and o["revealed"]:
         o["headline"] = _headline(r.opinions[0])
     return o
 
@@ -261,7 +267,7 @@ def _point_entries(hand, mine, open_point=""):
             "past": past,
             "decision": decision,
             "rec": _rec_info(rs[0], hand, mine, past) if rs else None,
-            "older": [_older_entry(r) for r in rs[1:]],
+            "older": [_older_entry(r, past) for r in rs[1:]],
             "open": point == open_point,
         }
 
