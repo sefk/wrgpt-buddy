@@ -182,3 +182,20 @@ GMAIL_CLIENT_FILE = SECRETS_DIR / 'gmail-client.json'
 GMAIL_TOKEN_FILE = SECRETS_DIR / 'gmail-token.json'
 GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 GMAIL_QUERY = os.environ.get('GMAIL_QUERY', 'label:wrgpt after:2026/09/01')
+
+# Advice (poker/advice): local models via LM Studio + Sonnet via the claude CLI.
+ADVICE_LMSTUDIO_URL = os.environ.get('ADVICE_LMSTUDIO_URL', 'http://localhost:1234/v1')
+ADVICE_LOCAL_MODELS = [
+    ('qwen/qwen3.6-35b-a3b', 'Qwen'),
+    ('openai/gpt-oss-20b', 'gpt-oss'),
+]
+if os.environ.get('ADVICE_LOCAL_MODELS'):  # "model_id=Label,model_id=Label"
+    ADVICE_LOCAL_MODELS = [
+        tuple(p.split('=', 1)) for p in _env_list('ADVICE_LOCAL_MODELS') if '=' in p
+    ]
+ADVICE_LOCAL_TIMEOUT_S = int(os.environ.get('ADVICE_LOCAL_TIMEOUT_S', '900'))  # JIT model load
+ADVICE_CLAUDE_BIN = os.environ.get('ADVICE_CLAUDE_BIN', str(Path.home() / '.local/bin/claude'))
+ADVICE_CLAUDE_MODEL = os.environ.get('ADVICE_CLAUDE_MODEL', 'sonnet')
+ADVICE_CLAUDE_CWD = Path(os.environ.get('ADVICE_CLAUDE_CWD', BASE_DIR / '.claude-advice'))
+ADVICE_CLAUDE_TIMEOUT_S = int(os.environ.get('ADVICE_CLAUDE_TIMEOUT_S', '300'))
+ADVICE_WORKER_INTERVAL_S = int(os.environ.get('ADVICE_WORKER_INTERVAL_S', '30'))
