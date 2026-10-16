@@ -16,9 +16,14 @@ class Command(BaseCommand):
         parser.add_argument("--year", type=int, default=timezone.now().year,
                             help="only hands started that year (default: this year)")
         parser.add_argument("--dry-run", action="store_true", help="list what would be queued")
+        parser.add_argument("--redo", action="store_true",
+                            help="also re-analyze decisions that already have a finished analysis "
+                            "(e.g. after a replay fix); the new one becomes the one shown")
 
-    def handle(self, *args, year, dry_run, **opts):
-        live_statuses = (Recommendation.PENDING, Recommendation.RUNNING, Recommendation.DONE)
+    def handle(self, *args, year, dry_run, redo, **opts):
+        live_statuses = (Recommendation.PENDING, Recommendation.RUNNING)
+        if not redo:
+            live_statuses += (Recommendation.DONE,)
         queued = 0
         ts = timezone.now().strftime("%Y%m%d%H%M%S%f")  # keys stay unique if errored ones are retried
         hands = Hand.objects.select_related("table").order_by("table__name", "number")

@@ -47,3 +47,13 @@ def test_backfill_requeues_errored_points(hand):
     hand.recommendations.update(status=Recommendation.ERROR)
     call_command("backfill_analyses", "--year", year)
     assert hand.recommendations.filter(status=Recommendation.PENDING).count() == len(my_decisions(hand))
+
+
+def test_backfill_redo_requeues_done_points_but_not_queued_ones(hand):
+    year = str((hand.started_at or hand.ended_at).year)
+    points = [d.point for d in my_decisions(hand)]
+    Recommendation.objects.create(hand=hand, point=points[0], decision_key="x", status=Recommendation.DONE)
+    Recommendation.objects.create(hand=hand, point=points[1], decision_key="y", status=Recommendation.PENDING)
+    call_command("backfill_analyses", "--year", year, "--redo")
+    queued = list(hand.recommendations.filter(decision_key__startswith="backfill-").values_list("point", flat=True))
+    assert queued == [points[0]]

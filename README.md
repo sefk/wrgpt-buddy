@@ -25,7 +25,8 @@ uv run manage.py gmail_auth   # opens a browser, writes secrets/gmail-token.json
 uv run manage.py import_eml path/to/file.eml   # ingest a saved email
 uv run manage.py poll_gmail                    # fetch new mail from Gmail
 uv run manage.py reparse                       # re-run parsers over stored mail
-uv run manage.py backfill_analyses --dry-run   # queue analyses of my past moves this year (runs after live work)
+uv run manage.py backfill_analyses --dry-run   # queue analyses of my past moves this year (runs after live work);
+                                               # --redo re-analyzes ones already done
 uv run pytest poker -q                         # tests
 ```
 
