@@ -110,9 +110,11 @@ code { font-size: .88em; word-break: break-all; }
 .rec-foot .stale form { margin: 0; }
 .older { margin-top: 12px; font-size: .9rem; } .older ul { margin: 6px 0 0; padding-left: 1.2em; }
 .rec-ind { text-align: center; }
-.recgrid { display: inline-grid; grid-template-columns: auto repeat(3, 1em); gap: 0 3px; font-size: .75rem; line-height: 1.25; text-align: center; }
+.recgrid { display: inline-grid; grid-template-columns: auto 1em calc(1em + 4px) 1em; gap: 0 3px; font-size: .75rem; line-height: 1.25; text-align: center; }
 .recgrid b { font-weight: 600; color: var(--muted); padding-right: 2px; }
 .recgrid i { font-style: normal; cursor: default; }
+/* Sonnet (first dot) apart from the two local models */
+.recgrid i:nth-child(4n+3) { border-left: 1px solid var(--line); padding-left: 3px; }
 .rg-agree { color: var(--pos); } .rg-size { color: #d97706; } .rg-differ { color: var(--neg); }
 
 /* Per-decision analysis in the action log */
