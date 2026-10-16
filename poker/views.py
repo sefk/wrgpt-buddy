@@ -4,10 +4,13 @@ from collections import OrderedDict
 
 from django.conf import settings
 from django.db.models import Max
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone as djtz
 from django.views.decorators.http import require_POST
 
+from .advice.points import live_point, my_decisions
 from .models import Action, Hand, MyHand, Recommendation
 
 ROUND_NAMES = {1: "Preflop", 2: "Flop", 3: "Turn", 4: "River"}
@@ -69,7 +72,7 @@ def _shows(actions):
     return out
 
 
-def _detail_context(hand):
+def _detail_context(hand, open_point=""):
     me = _me()
     actions = list(hand.actions.select_related("player"))
     seats = list(hand.seats.select_related("player"))
@@ -120,9 +123,11 @@ def _detail_context(hand):
         "missing": missing,
         "next_to_act_name": nta,
         "any_shown": bool(shows),
-        **_recommendation_context(hand, mine),
     }
-    ctx["analyzing"] = bool(ctx["rec"] and ctx["rec"]["status"] in ("pending", "running"))
+    by_action, live_entry, other, analyzing = _point_entries(hand, mine, open_point)
+    for st in street_list:
+        st["actions"] = [{"a": a, "pt": by_action.get(a.pk)} for a in st["actions"]]
+    ctx.update(live=live_entry, other=other, analyzing=analyzing)
     return ctx
 
 
@@ -156,60 +161,146 @@ def _is_stale(rec, hand, mine):
     return False
 
 
-def _recommendation_context(hand, mine):
-    recs = list(hand.recommendations.all())  # newest first
-    if not recs:
-        return {"rec": None, "older": []}
-    rec = recs[0]
+def _headline(o):
+    amount = o.get("amount")
+    money = f"${_whole(amount):,}" if amount not in (None, "") else ""
+    return " ".join(str(x) for x in (o.get("action"), money) if x)
+
+
+def _rec_info(rec, hand, mine, past):
+    """Everything the templates need to draw one Recommendation."""
     now = djtz.now()
-    info = {"obj": rec, "status": rec.status, "revealed": rec.revealed_at is not None}
+    revealed = past or rec.revealed_at is not None
+    info = {"obj": rec, "status": rec.status, "revealed": revealed}
     if rec.status in (Recommendation.PENDING, Recommendation.RUNNING):
         since = rec.started_at or rec.created_at
         info["minutes"] = max(0, int((now - since).total_seconds() // 60))
     elif rec.status == Recommendation.DONE:
         opinions = [dict(o, amount=_whole(o.get("amount"))) for o in rec.opinions or []]
         info["n_opinions"] = len(opinions)
-        if info["revealed"]:
+        if revealed:
             judgement = rec.judgement or {}
             verdicts = {v.get("model"): v for v in judgement.get("verdicts", [])}
             disagree = rec.concurrence not in ("agree", "")
             for o in opinions:
                 label, css = GRADE_LABELS.get(o.get("grade"), ("", ""))
                 o["grade_label"], o["grade_css"] = label, css
+                o["headline"] = _headline(o)
                 if disagree:
                     o["verdict"] = verdicts.get(o.get("label")) or verdicts.get(o.get("model"))
+            actual = rec.actual or None
+            if actual:
+                actual = dict(actual, amount=_whole(actual.get("amount")), headline=_headline(actual))
+            glabel, gcss = GRADE_LABELS.get(rec.actual_grade, ("", ""))
             info.update(
                 opinions=opinions,
                 judgement=judgement,
                 disagree=disagree,
+                concurrence=rec.concurrence,
                 lead=next((o for o in opinions if o.get("label") == "Sonnet"), opinions[0] if opinions else None),
-                stale=_is_stale(rec, hand, mine),
+                stale=False if past else _is_stale(rec, hand, mine),
                 snapshot=rec.snapshot or {},
                 cache_read=judgement.get("cache_read_tokens"),
+                actual=actual,
+                actual_grade_label=glabel,
+                actual_grade_css=gcss,
+                on_actual=judgement.get("on_actual", ""),
             )
-    older = []
-    for r in recs[1:]:
-        o = {"obj": r, "status": r.status, "revealed": r.revealed_at is not None}
-        if r.status == Recommendation.DONE and o["revealed"] and r.opinions:
-            first = r.opinions[0]
-            o["headline"] = " ".join(
-                str(x) for x in (first.get("action"), f"${_whole(first['amount']):,}" if first.get("amount") not in (None, "") else "") if x
-            )
-        older.append(o)
-    return {"rec": info, "older": older}
+    return info
 
 
-def _request_key(hand):
-    return f"req-{hand.last_sequence}-{djtz.now():%Y%m%d%H%M%S%f}"
+def _seq_of(rec):
+    m = KEY_SEQ_RE.match(rec.decision_key)
+    return int(m.group(1)) if m else None
+
+
+def _older_entry(r):
+    o = {"obj": r, "status": r.status, "revealed": r.revealed_at is not None}
+    if r.status == Recommendation.DONE and r.opinions:
+        o["headline"] = _headline(r.opinions[0])
+    return o
+
+
+def _point_entries(hand, mine, open_point=""):
+    """Pair each of my decisions (and the live one) with its recommendations.
+
+    Returns (by_action_pk, live_entry, other_entries, analyzing).
+    """
+    recs = list(hand.recommendations.all())  # newest first
+    decisions = my_decisions(hand)
+    live = live_point(hand)
+    by_point = {}
+    for r in recs:
+        by_point.setdefault(r.point, []).append(r)
+    live_name = live.point if live else None
+    claimed = {d.point for d in decisions}
+    if live_name:
+        claimed.add(live_name)
+        # legacy rows (blank point) for this very decision belong to the live row
+        for r in by_point.pop("", []):
+            seq = _seq_of(r)
+            if seq is not None and seq == hand.last_sequence:
+                by_point.setdefault(live_name, []).append(r)
+            else:
+                by_point.setdefault("", []).append(r)
+        by_point[live_name] = sorted(by_point.get(live_name, []), key=lambda r: r.created_at, reverse=True)
+
+    def entry(point, past, decision):
+        rs = by_point.get(point, [])
+        return {
+            "point": point,
+            "anchor": f"pt-{point}",
+            "past": past,
+            "decision": decision,
+            "rec": _rec_info(rs[0], hand, mine, past) if rs else None,
+            "older": [_older_entry(r) for r in rs[1:]],
+            "open": point == open_point,
+        }
+
+    by_action = {d.action.pk: entry(d.point, True, d) for d in decisions}
+    live_entry = None
+    if live:
+        live_entry = entry(live.point, False, live)
+        live_entry["round_name"] = ROUND_NAMES.get(live.betting_round, f"Round {live.betting_round}")
+        live_entry["anchor"] = "pt-live"
+    other = []
+    for point, rs in by_point.items():
+        if point in claimed:
+            continue
+        for r in rs:
+            o = _rec_info(r, hand, mine, True)
+            o["label"] = r.point or r.decision_key
+            other.append(o)
+    other.sort(key=lambda o: o["obj"].created_at, reverse=True)
+    analyzing = any(r.status in (Recommendation.PENDING, Recommendation.RUNNING) for r in recs)
+    return by_action, live_entry, other, analyzing
+
+
+def _redirect_back(table, number, point=""):
+    url = reverse("poker:hand", args=[table, number])
+    return redirect(f"{url}#pt-{point}" if point else url)
 
 
 @require_POST
 def request_analysis(request, table, number):
     hand = get_object_or_404(Hand, table__name=table, number=number)
+    point = request.POST.get("point", "").strip()
+    live = live_point(hand)
+    ts = djtz.now().strftime("%Y%m%d%H%M%S%f")
+    if point:
+        if live and point == live.point:
+            key, anchor = f"req-{hand.last_sequence}-{ts}", "live"
+        elif point in {d.point for d in my_decisions(hand)}:
+            key, anchor = f"pt-{point}-{ts}", point
+        else:
+            return HttpResponseBadRequest("not one of my decision points")
+    else:
+        point = live.point if live else ""
+        key, anchor = f"req-{hand.last_sequence}-{ts}", "live" if live else ""
     Recommendation.objects.create(
-        hand=hand, decision_key=_request_key(hand), requested=True, status=Recommendation.PENDING
+        hand=hand, point=point, decision_key=key, requested=True, status=Recommendation.PENDING
     )
-    return redirect("poker:hand", table=table, number=number)
+    return _redirect_back(table, number, anchor)
 
 
 @require_POST
@@ -218,21 +309,21 @@ def reveal_recommendation(request, table, number, pk):
     if rec.status == Recommendation.DONE and rec.revealed_at is None:
         rec.revealed_at = djtz.now()
         rec.save(update_fields=["revealed_at"])
-    return redirect("poker:hand", table=table, number=number)
+    return _redirect_back(table, number, "live" if rec.point else "")
 
 
 def current(request):
     hand = current_hand()
     if hand is None:
         return render(request, "poker/empty.html")
-    ctx = _detail_context(hand)
+    ctx = _detail_context(hand, request.GET.get("open", ""))
     ctx["is_current"] = True
     return render(request, "poker/hand_detail.html", ctx)
 
 
 def hand_detail(request, table, number):
     hand = get_object_or_404(Hand.objects.select_related("table", "next_to_act"), table__name=table, number=number)
-    ctx = _detail_context(hand)
+    ctx = _detail_context(hand, request.GET.get("open", ""))
     if not hand.is_over:
         current = current_hand()
         ctx["is_current"] = current is not None and current.pk == hand.pk
@@ -249,11 +340,12 @@ def hand_list(request):
         .order_by("table__name", "-number")
     )
     rec_by_hand = {}
-    for hid, conc in (
-        Recommendation.objects.filter(status=Recommendation.DONE, revealed_at__isnull=False)
-        .order_by("created_at").values_list("hand_id", "concurrence")
+    for hid, conc, revealed, actual in (
+        Recommendation.objects.filter(status=Recommendation.DONE, hand__isnull=False)
+        .order_by("created_at").values_list("hand_id", "concurrence", "revealed_at", "actual")
     ):
-        rec_by_hand[hid] = conc
+        if revealed is not None or actual:  # past points count as revealed
+            rec_by_hand[hid] = conc
     folded_ids = set(
         Action.objects.filter(kind__in=("fold", "vacation_fold"), player__name=me)
         .values_list("hand_id", flat=True)

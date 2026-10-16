@@ -82,7 +82,7 @@ code { font-size: .88em; word-break: break-all; }
 .btn { padding: 9px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn:hover { filter: brightness(1.07); }
-.rec form { margin: 8px 0; }
+.rec form:not(.inline) { margin: 8px 0; }
 .rec-status { margin: 0 0 4px; font-weight: 600; }
 .spin { display: inline-block; width: .8em; height: .8em; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; vertical-align: -1px; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -110,3 +110,27 @@ code { font-size: .88em; word-break: break-all; }
 .rec-foot .stale form { margin: 0; }
 .older { margin-top: 12px; font-size: .9rem; } .older ul { margin: 6px 0 0; padding-left: 1.2em; }
 .rec-ind { text-align: center; } .rec-agree { color: var(--pos); } .rec-differ { color: #d97706; }
+
+/* Per-decision analysis in the action log */
+.log li.has-pt { flex-wrap: wrap; }
+.pt { flex: 1 1 100%; font-weight: 400; color: var(--text); margin: 2px 0 6px; }
+.pt form.inline { display: inline; margin: 0; }
+.small-btn { padding: 3px 10px; font-size: .8rem; }
+.pt .rec-status { font-size: .88rem; }
+.inline-err { padding: 6px 10px; font-size: .88rem; margin: 2px 0; }
+.models { border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; background: var(--bg); }
+.models > summary { cursor: pointer; font-size: .88rem; padding: 3px 0; }
+.models[open] > summary { margin-bottom: 4px; }
+.sum-label { font-weight: 600; } .sum-you { font-weight: 600; }
+.sum-you .grade { margin-left: 4px; }
+.models .rerun { margin: 10px 0 4px; }
+.opinion.you { background: var(--me); } .opinion.you.g-size { border-left-color: #d97706; }
+.callout.judge-you { background: var(--panel); border: 2px solid var(--accent); }
+.callout.judge-you p { margin: 4px 0 0; }
+.live-row { margin-top: 14px; padding-top: 6px; border-top: 2px solid #d97706; }
+.live-row .pt { margin-top: 6px; }
+.jump { font-size: .8rem; font-weight: 600; margin-left: 8px; padding: 3px 10px; border-radius: 99px; background: #d97706; color: #fff; text-decoration: none; vertical-align: middle; }
+.other-item { margin-top: 10px; border-top: 1px dotted var(--line); padding-top: 6px; }
+.pt .callout, .other-item .callout { margin: 8px 0 0; }
+[id^="pt-"] { scroll-margin-top: 12px; }
+.callout.partial { color: var(--muted); }

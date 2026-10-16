@@ -1,0 +1,56 @@
+{% load poker_extras %}{# the opinion cards for one recommendation; context: r (rec info) #}
+{% if r.disagree %}
+<div class="callout differ" role="note">
+  <strong>The models disagree{% if r.judgement.preferred %}; the judge prefers {{ r.judgement.preferred }}{% endif %}.</strong>
+  {% if r.judgement.summary %}<p>{{ r.judgement.summary }}</p>{% endif %}
+</div>
+{% elif r.lead and r.concurrence == "agree" %}
+<p class="callout agree">All three agree: <strong>{{ r.lead.headline }}</strong></p>
+{% elif r.lead %}
+<p class="callout partial">Not every model answered, so there is no comparison.</p>
+{% endif %}
+{% if r.actual %}
+<article class="opinion you {% if r.actual_grade_css %}g-{{ r.actual_grade_css }}{% endif %}">
+  <header>
+    <div><strong>You</strong> <span class="muted small">what you did</span></div>
+    {% if r.actual_grade_label %}<span class="grade {{ r.actual_grade_css }}">{{ r.actual_grade_label }}</span>{% endif %}
+  </header>
+  <p class="act-line"><strong>{{ r.actual.headline|default:r.actual.text }}</strong></p>
+  {% if r.actual.text and r.actual.headline %}<p class="muted small">{{ r.actual.text }}</p>{% endif %}
+</article>
+{% endif %}
+{% if r.on_actual %}
+<div class="callout judge-you" role="note"><strong>Judge on your move</strong><p>{{ r.on_actual }}</p></div>
+{% endif %}
+{% for o in r.opinions %}
+<article class="opinion {% if o.grade_css %}g-{{ o.grade_css }}{% endif %}">
+  <header>
+    <div><strong>{{ o.label }}</strong> <span class="muted small model">{{ o.model }}</span></div>
+    {% if o.grade_label %}<span class="grade {{ o.grade_css }}">{{ o.grade_label }}</span>{% endif %}
+  </header>
+  <p class="act-line">{% if o.action %}<strong>{{ o.headline }}</strong>{% else %}<span class="muted">no answer</span>{% endif %}
+    {% if o.command %} <code class="cmd">{{ o.command }}</code>{% endif %}</p>
+  {% if o.reasoning %}<p class="reasoning">{{ o.reasoning }}</p>{% endif %}
+  {% if o.error %}<p class="banner err">{{ o.error }}</p>{% endif %}
+  {% if o.seconds is not None and o.seconds != "" %}<p class="muted small">{{ o.seconds|floatformat:1 }}s</p>{% endif %}
+</article>
+{% if o.verdict %}
+<div class="verdict"><span class="small muted">Judge on {{ o.label }}{% if o.verdict.concurrence %} &middot; {{ o.verdict.concurrence }}{% endif %}</span>
+  <p>{{ o.verdict.evaluation }}</p></div>
+{% endif %}
+{% endfor %}
+<footer class="rec-foot muted small">
+  {% with s=r.snapshot %}
+  <div>Computed for:
+    {% if s.cards %}{% cards s.cards %}{% endif %}
+    {% if s.board %}board {% cards s.board %}{% endif %}
+    {% if s.pot is not None and s.pot != "" %}&middot; pot {{ s.pot|money }}{% endif %}
+    {% if s.to_call is not None and s.to_call != "" %}&middot; {{ s.to_call|money }} to call{% endif %}
+  </div>
+  {% endwith %}
+  <div>{% if r.obj.cost_usd is not None %}cost ${{ r.obj.cost_usd|floatformat:4 }}{% endif %}{% if r.cache_read %} &middot; {{ r.cache_read }} cache-read tokens{% endif %}</div>
+  {% if r.stale %}
+  <div class="stale"><strong>Stale: computed for an earlier state.</strong>
+    {% include "poker/_ask_form.html" with label="Re-analyze" point=pt.point %}</div>
+  {% endif %}
+</footer>

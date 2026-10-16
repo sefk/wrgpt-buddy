@@ -1,0 +1,39 @@
+{% load poker_extras %}{# the per-decision control; context: pt (point entry) #}
+{% with rec=pt.rec %}
+<div class="pt rec{% if pt.past %} past{% else %} live{% endif %}" {% if pt.past %}id="{{ pt.anchor }}"{% endif %}>
+  {% if not rec %}
+    {% if pt.past %}{% include "poker/_ask_form.html" with label="Ask models" point=pt.point %}
+    {% else %}<p class="muted small">Not analyzed yet. The analysis starts on its own when it is your turn, and stays hidden until you ask.</p>
+    {% include "poker/_ask_form.html" with label="Ask models" point=pt.point primary=True %}{% endif %}
+  {% elif rec.status == "pending" or rec.status == "running" %}
+    <p class="rec-status"><span class="spin" aria-hidden="true"></span> Analyzing&hellip; {{ rec.minutes }} min <span class="muted small">({% if rec.status == "pending" %}queued{% else %}running{% endif %}; this page refreshes by itself)</span></p>
+  {% elif rec.status == "error" %}
+    <div class="banner err inline-err" role="alert">Analysis failed.
+      <details><summary>Error</summary><pre class="rec-pre">{{ rec.obj.error|default:"(no message)" }}</pre></details>
+      {% include "poker/_ask_form.html" with label="Retry" point=pt.point %}
+    </div>
+  {% elif not rec.revealed %}
+    <p class="rec-status">Ready <span class="muted">&middot; {{ rec.n_opinions }} opinion{{ rec.n_opinions|pluralize }}</span></p>
+    <form method="post" action="{% url 'poker:reveal' hand.table.name hand.number rec.obj.pk %}">{% csrf_token %}<button class="btn primary" type="submit">Show recommendation</button></form>
+  {% elif pt.past %}
+    <details class="models"{% if pt.open %} open{% endif %}>
+      <summary><span class="sum-label">Models:</span>
+        {% for o in rec.opinions %}<span class="sum-op">{{ o.label }} {% if o.action %}{{ o.headline }}{% else %}&ndash;{% endif %}</span>{% if not forloop.last %} &middot; {% endif %}{% endfor %}
+        {% if rec.actual %}<span class="sum-you">&mdash; you: {{ rec.actual.headline|default:rec.actual.text }}{% if rec.actual_grade_label %} <span class="grade {{ rec.actual_grade_css }}">{{ rec.actual_grade_label }}</span>{% endif %}</span>{% endif %}
+      </summary>
+      {% include "poker/_opinions.html" with r=rec %}
+      <div class="rerun">{% include "poker/_ask_form.html" with label="Re-run" point=pt.point %}</div>
+    </details>
+  {% else %}
+    {% include "poker/_opinions.html" with r=rec %}
+    <div class="rerun">{% include "poker/_ask_form.html" with label="Re-run" point=pt.point %}</div>
+  {% endif %}
+  {% if pt.older %}
+  <details class="older"><summary>Earlier analyses ({{ pt.older|length }})</summary>
+    <ul>
+    {% for o in pt.older %}<li>{{ o.obj.created_at|date:"M j, g:i a" }} &middot; {{ o.status }}{% if o.status == "done" and o.headline %} &middot; {{ o.headline }}{% endif %}</li>{% endfor %}
+    </ul>
+  </details>
+  {% endif %}
+</div>
+{% endwith %}

@@ -1,0 +1,1 @@
+<form method="post" class="inline" action="{% url 'poker:request_analysis' hand.table.name hand.number %}">{% csrf_token %}<input type="hidden" name="point" value="{{ point }}"><button class="btn small-btn{% if primary %} primary{% endif %}" type="submit">{{ label }}</button></form>
