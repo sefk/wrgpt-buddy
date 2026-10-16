@@ -352,3 +352,12 @@ def test_worker_processes_past_rows(over, fakes):
     call_command("recommend_worker", "--once")
     rec = Recommendation.objects.get(point="r1n1")
     assert rec.status == "done" and rec.actual["action"] == "call"
+
+
+def test_auth_error_is_explained_and_fails_the_recommendation():
+    from poker.advice import sonnet
+
+    msg = sonnet._explain("Failed to authenticate: OAuth session expired and could not be refreshed")
+    assert sonnet.is_auth_error(msg)
+    assert "claude setup-token" in msg
+    assert not sonnet.is_auth_error(sonnet._explain("rate limited"))

@@ -62,6 +62,20 @@ SYSTEM_PROMPT = (
 )
 
 
+AUTH_HINT = (
+    "The claude CLI is not logged in for background use. Run `claude setup-token` and put "
+    "the token in .env as CLAUDE_CODE_OAUTH_TOKEN, then `bin/deploy`."
+)
+
+
+def _explain(msg: str) -> str:
+    return f"{msg} — {AUTH_HINT}" if "authenticate" in msg.lower() else msg
+
+
+def is_auth_error(err: str) -> bool:
+    return AUTH_HINT in (err or "")
+
+
 class ClaudeError(Exception):
     pass
 
@@ -90,13 +104,17 @@ def _invoke(prompt: str, resume: str | None = None) -> dict:
     except subprocess.TimeoutExpired:
         raise ClaudeError(f"claude timed out after {settings.ADVICE_CLAUDE_TIMEOUT_S}s")
     if p.returncode != 0:
-        raise ClaudeError(f"claude exited {p.returncode}: {(p.stderr or p.stdout)[-500:]}")
+        try:
+            msg = str(json.loads(p.stdout).get("result"))
+        except ValueError:
+            msg = (p.stderr or p.stdout)[-500:]
+        raise ClaudeError(f"claude exited {p.returncode}: {_explain(msg)}")
     try:
         data = json.loads(p.stdout)
     except ValueError:
         raise ClaudeError(f"claude output not JSON: {p.stdout[-300:]}")
     if data.get("is_error"):
-        raise ClaudeError(f"claude error: {str(data.get('result'))[:500]}")
+        raise ClaudeError(f"claude error: {_explain(str(data.get('result'))[:500])}")
     if not isinstance(data.get("structured_output"), dict):
         raise ClaudeError(f"no structured_output: {str(data.get('result'))[:300]}")
     return data

@@ -77,7 +77,10 @@ def run(rec: Recommendation) -> Recommendation:
         rec.judgement = judgement
         rec.concurrence = grading.overall(o["grade"] for o in locals_)
         rec.cost_usd = Decimal(str(round(cost, 4)))
-        if all(o["error"] for o in rec.opinions):
+        if sonnet.is_auth_error(son.get("error", "")):
+            rec.status = Recommendation.ERROR
+            rec.error = son["error"]
+        elif all(o["error"] for o in rec.opinions):
             rec.status = Recommendation.ERROR
             rec.error = "; ".join(f"{o['label']}: {o['error']}" for o in rec.opinions)
         else:
