@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Case, IntegerField, Q, When
 from django.utils import timezone
 
 from poker.models import Hand, Recommendation
@@ -19,6 +19,17 @@ from .prompt import build_prompt
 
 log = logging.getLogger("poker.advice")
 STALE_AFTER = timedelta(minutes=30)
+BACKFILL_PREFIX = "backfill-"  # decision_key of analyses queued in bulk; they run after everything else
+
+
+def queue():
+    """PENDING recommendations in the order the worker runs them: oldest first, backfill last."""
+    return (
+        Recommendation.objects.filter(status=Recommendation.PENDING)
+        .annotate(backfill=Case(When(decision_key__startswith=BACKFILL_PREFIX, then=1), default=0,
+                                output_field=IntegerField()))
+        .order_by("backfill", "created_at", "id")
+    )
 
 
 def decision_key(hand: Hand) -> str:

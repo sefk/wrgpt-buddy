@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone as djtz
 from django.views.decorators.http import require_POST
 
-from .advice import grading
+from .advice import engine, grading
 from .advice.points import live_point, my_decisions
 from .models import Action, Hand, MyHand, Recommendation
 
@@ -354,9 +354,9 @@ def queue_ahead(rec) -> int:
     """How many analyses the worker will handle before this one."""
     if rec.status != Recommendation.PENDING:
         return 0
-    return Recommendation.objects.filter(
-        status__in=(Recommendation.PENDING, Recommendation.RUNNING), created_at__lt=rec.created_at
-    ).count()
+    running = Recommendation.objects.filter(status=Recommendation.RUNNING).count()
+    ids = list(engine.queue().values_list("id", flat=True))
+    return running + (ids.index(rec.id) if rec.id in ids else len(ids))
 
 
 def recommendation_progress(request, table, number, pk):

@@ -5,13 +5,12 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from poker.advice import engine
-from poker.models import Recommendation
 
 log = logging.getLogger("poker.advice")
 
 
 class Command(BaseCommand):
-    help = "Create due recommendations and process PENDING ones, oldest first, one at a time."
+    help = "Create due recommendations and process PENDING ones, oldest first (backfill last), one at a time."
 
     def add_arguments(self, parser):
         parser.add_argument("--once", action="store_true", help="do one pass and exit")
@@ -31,7 +30,7 @@ class Command(BaseCommand):
             for rec in engine.due_decisions():
                 log.info("due: %s", rec)
             while True:
-                rec = Recommendation.objects.filter(status=Recommendation.PENDING).order_by("created_at", "id").first()
+                rec = engine.queue().first()
                 if rec is None:
                     break
                 if settings.ADVICE_PAUSE_FILE.exists():
