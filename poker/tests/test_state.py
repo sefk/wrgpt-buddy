@@ -195,3 +195,30 @@ def test_finished_hand_stays_finished_after_stray_broadcast():
     apply(10394, False, [HandEvent(EventKind.OTHER, "Player leaving table: Jim Anderson")])
     h = Hand.objects.get(table__name="a31", number=36)
     assert h.is_over and h.last_sequence == 10394
+
+
+def test_start_bankrolls_come_from_the_earliest_broadcast_whatever_the_order():
+    run("late", bcast(20, seats=(seat(1, "Ann", 700), seat(2, "Bob", 1100))), 10)
+    run("early", bcast(10, seats=(seat(1, "Ann", 900), seat(2, "Bob", 1100))), 0)
+    h = Hand.objects.get()
+    assert dict(h.seats.values_list("player__name", "bankroll_start")) == {"Ann": 900, "Bob": 1100}
+    assert h.pot == 300 and h.last_sequence == 20
+
+
+def test_final_broadcast_keeps_the_hands_button_and_records_end_bankrolls():
+    run("m1", bcast(10, seats=(seat(1, "Ann", 900, is_dealer=True), seat(2, "Bob", 1100))), 0)
+    final = bcast(11, hand_over=True,
+                  seats=(seat(1, "Ann", 900, is_dealer=True), seat(2, "Bob", 1100)),
+                  final_seats=(seat(1, "Ann", 1200), seat(2, "Bob", 800, is_dealer=True)))
+    run("m2", final, 1)
+    seats = {s.player.name: s for s in Hand.objects.get().seats.all()}
+    assert seats["Ann"].is_dealer and not seats["Bob"].is_dealer
+    assert (seats["Ann"].bankroll_end, seats["Bob"].bankroll_end) == (1200, 800)
+
+
+def test_unquoted_reply_matches_its_hand_number():
+    for n, mid in ((1, "p1"), (2, "p2")):
+        run(mid, PrivateState(EmailKind.REMINDER, "g2", "b17", n, 3, ("9d", "9s")), n, EmailKind.REMINDER)
+    run("r", MyReply("check", 1, "g2", None), 5, EmailKind.MY_REPLY)
+    cmds = dict(MyHand.objects.values_list("hand__number", "last_command"))
+    assert cmds == {1: "check", 2: ""}

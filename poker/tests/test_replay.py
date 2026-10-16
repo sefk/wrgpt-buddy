@@ -27,7 +27,7 @@ def test_preflop_call(h2):
     assert r.stacks["Two_Jacks"] == 59700 and r.stacks["Michael Rankin"] == 59800
     assert r.in_hand["Mark Ballinger"] is False and r.in_hand["Options Dee"] is False
     assert r.in_hand["Michael Rankin"] and r.in_hand["Bryan Currie"]
-    assert r.dealer == "Two_Jacks" and r.hole_cards == "9d 9s"
+    assert r.dealer == "Bryan Currie" and r.hole_cards == "9d 9s"  # Two_Jacks (seat 3) posts the SB
     assert r.log[-1].text == "RiverRat calls"
 
 

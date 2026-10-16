@@ -116,6 +116,8 @@ def _apply_broadcast(raw: RawEmail, b: Broadcast) -> None:
         _apply_seats(hand, b)
     elif b.hand_over and not hand.is_over:
         hand.is_over = True
+    if hand.sequences and b.sequence == hand.sequences[0] and b.seats:
+        _apply_start_bankrolls(hand, b)
     hand.save()
     _clear_consumed_advance(raw, hand, b)
 
@@ -149,8 +151,7 @@ def _clear_consumed_advance(raw: RawEmail, hand: Hand, b: Broadcast) -> None:
 
 
 def _apply_seats(hand, b):
-    rows = b.final_seats if (b.hand_over and b.final_seats) else b.seats
-    for s in rows:
+    for s in b.seats:
         p = _player(s.name)
         seat, created = Seat.objects.get_or_create(
             hand=hand, player=p, defaults={"seat_number": s.seat, "bankroll_start": s.bankroll}
@@ -158,9 +159,24 @@ def _apply_seats(hand, b):
         seat.seat_number = s.seat
         seat.is_dealer = s.is_dealer
         seat.status = s.status
-        if b.hand_over and b.final_seats:
-            seat.bankroll_end = s.bankroll
         seat.save()
+    # The final broadcast's second table is the NEXT hand's seating (the button has
+    # moved): take only the ending bankrolls from it.
+    if b.hand_over and b.final_seats:
+        for s in b.final_seats:
+            Seat.objects.filter(hand=hand, player__name=s.name).update(bankroll_end=s.bankroll)
+
+
+def _apply_start_bankrolls(hand, b):
+    """The earliest broadcast of a hand defines its starting bankrolls (after blinds),
+    even when it arrives after later ones."""
+    for s in b.seats:
+        Seat.objects.update_or_create(
+            hand=hand, player=_player(s.name),
+            defaults={"bankroll_start": s.bankroll},
+            create_defaults={"seat_number": s.seat, "bankroll_start": s.bankroll,
+                             "is_dealer": s.is_dealer, "status": s.status},
+        )
 
 
 def _apply_private(raw: RawEmail, p: PrivateState) -> MyHand:
@@ -189,7 +205,11 @@ def _apply_reply(raw: RawEmail, r: MyReply) -> None:
     if r.quoted is not None:
         mine = _apply_private(raw, r.quoted)
     elif r.game_id:
-        mine = MyHand.objects.filter(game_id=r.game_id).first()
+        # Game IDs are reused across hands: match the subject's hand number too.
+        qs = MyHand.objects.filter(game_id=r.game_id)
+        if r.hand_number is not None:
+            qs = qs.filter(hand__number=r.hand_number)
+        mine = qs.order_by("-hand__number", "-id").first()
     if mine is None:
         return
     if mine.last_command_at is None or raw.sent_at is None or raw.sent_at >= mine.last_command_at:
