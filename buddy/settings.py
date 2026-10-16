@@ -194,6 +194,7 @@ if os.environ.get('ADVICE_LOCAL_MODELS'):  # "model_id=Label,model_id=Label"
         tuple(p.split('=', 1)) for p in _env_list('ADVICE_LOCAL_MODELS') if '=' in p
     ]
 ADVICE_LOCAL_TIMEOUT_S = int(os.environ.get('ADVICE_LOCAL_TIMEOUT_S', '900'))  # JIT model load
+ADVICE_LMS_BIN = os.environ.get('ADVICE_LMS_BIN', str(Path.home() / '.lmstudio/bin/lms'))
 ADVICE_CLAUDE_BIN = os.environ.get('ADVICE_CLAUDE_BIN', str(Path.home() / '.local/bin/claude'))
 ADVICE_CLAUDE_MODEL = os.environ.get('ADVICE_CLAUDE_MODEL', 'sonnet')
 ADVICE_CLAUDE_CWD = Path(os.environ.get('ADVICE_CLAUDE_CWD', BASE_DIR / '.claude-advice'))

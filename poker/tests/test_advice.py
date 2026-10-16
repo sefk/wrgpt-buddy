@@ -361,3 +361,21 @@ def test_auth_error_is_explained_and_fails_the_recommendation():
     assert sonnet.is_auth_error(msg)
     assert "claude setup-token" in msg
     assert not sonnet.is_auth_error(sonnet._explain("rate limited"))
+
+
+def test_ensure_server_starts_lm_studio_when_down(monkeypatch):
+    from poker.advice import local
+
+    calls = []
+    state = {"up": False}
+    monkeypatch.setattr(local, "server_up", lambda: state["up"])
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        state["up"] = True
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    assert local.ensure_server() is True
+    assert calls and calls[0][1:] == ["server", "start"]
+    calls.clear()
+    assert local.ensure_server() is True and calls == []  # already up: no-op

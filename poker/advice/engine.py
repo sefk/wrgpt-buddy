@@ -54,6 +54,7 @@ def run(rec: Recommendation) -> Recommendation:
         # Locals first, one at a time (memory), then Sonnet and the judge back to
         # back so the prompt cache (5 min TTL) is still warm for the judge.
         locals_ = []
+        local.ensure_server(log)
         for model, label in settings.ADVICE_LOCAL_MODELS:
             locals_.append(local.ask(model, label, rec.prompt))
             log.info("%s: %s %s in %ss %s", rec, label, locals_[-1]["action"], locals_[-1]["seconds"], locals_[-1]["error"])

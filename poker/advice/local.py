@@ -15,6 +15,33 @@ from .prompt import RECOMMENDATION_SCHEMA
 SYSTEM = "You are an expert no-limit hold'em coach. Reply only with the requested JSON."
 
 
+def server_up() -> bool:
+    try:
+        with urllib.request.urlopen(f"{settings.ADVICE_LMSTUDIO_URL}/models", timeout=5):
+            return True
+    except (urllib.error.URLError, OSError):
+        return False
+
+
+def ensure_server(log=None) -> bool:
+    """LM Studio can be running with models loaded while its API server is off
+    (e.g. after the app restarts). Start the server if needed; True if it's up."""
+    import subprocess
+
+    if server_up():
+        return True
+    if log:
+        log.warning("LM Studio server not reachable; running `lms server start`")
+    try:
+        subprocess.run([settings.ADVICE_LMS_BIN, "server", "start"],
+                       capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        if log:
+            log.warning("lms server start failed: %s", exc)
+        return False
+    return server_up()
+
+
 def _post(url: str, payload: dict, timeout: float) -> dict:
     req = urllib.request.Request(
         url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"}
