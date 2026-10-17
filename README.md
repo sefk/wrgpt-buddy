@@ -38,7 +38,8 @@ DJANGO_DEBUG=1 uv run manage.py runserver
 
 ## Deployment (always-on Mac)
 
-Gunicorn listens on `127.0.0.1:8017`; static files come from whitenoise
+Gunicorn listens on `0.0.0.0:8017` (every interface, so also `http://<lan-or-tailnet-ip>:8017`);
+static files come from whitenoise
 (`staticfiles/`); `tailscale serve` provides tailnet-only HTTPS.
 
 ```sh
@@ -69,7 +70,7 @@ tailscale serve --bg --https=10000 http://127.0.0.1:8017
 
 The app is then at <https://studio.tailc33641.ts.net:10000/>. Host and port are
 configurable via `WRGPT_TAILNET_HOST` / `WRGPT_TAILNET_PORT` (used for
-`ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS`).
+`CSRF_TRUSTED_ORIGINS`; `ALLOWED_HOSTS` defaults to `*`).
 
 ## Recommendations
 

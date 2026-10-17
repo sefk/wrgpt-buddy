@@ -38,7 +38,8 @@ DEBUG = os.environ.get('DJANGO_DEBUG', '0') == '1'
 TAILNET_HOST = os.environ.get('WRGPT_TAILNET_HOST', 'studio.tailc33641.ts.net')
 TAILNET_PORT = os.environ.get('WRGPT_TAILNET_PORT', '10000')
 
-ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', f'localhost,127.0.0.1,{TAILNET_HOST}')
+# Gunicorn listens on every interface (LAN, tailnet IP, hostname), so accept any Host.
+ALLOWED_HOSTS = _env_list('DJANGO_ALLOWED_HOSTS', '*')
 CSRF_TRUSTED_ORIGINS = _env_list(
     'DJANGO_CSRF_TRUSTED_ORIGINS',
     f'https://{TAILNET_HOST}:{TAILNET_PORT},https://{TAILNET_HOST}',
@@ -48,7 +49,8 @@ if not DEBUG:
     # tailscale serve terminates TLS and proxies plain HTTP to gunicorn.
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     USE_X_FORWARDED_HOST = True
-    SESSION_COOKIE_SECURE = os.environ.get('DJANGO_SECURE_COOKIES', '1') == '1'
+    # Off by default: direct http://<host>:8017 access needs the CSRF cookie for POSTs.
+    SESSION_COOKIE_SECURE = os.environ.get('DJANGO_SECURE_COOKIES', '0') == '1'
     CSRF_COOKIE_SECURE = SESSION_COOKIE_SECURE
 
 
