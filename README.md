@@ -61,11 +61,14 @@ recommendation worker described below. It runs under launchd with `HOME` and a
 `PATH` that includes `~/.local/bin` and `/opt/homebrew/bin`, because it shells
 out to the `claude` CLI.
 
-Expose on the tailnet (one-time; port 443 and 8443 are already taken by
-Funnel services, so this uses 10000, which is not public):
+Expose it publicly with Tailscale Funnel (one-time; ports 443 and 8443 are
+already taken by other Funnel services, so this uses 10000, the third port
+Funnel allows). There is no login: anyone with the URL sees everything,
+including hole cards for a hand in progress, and can press Ask models.
 
 ```sh
-tailscale serve --bg --https=10000 http://127.0.0.1:8017
+tailscale funnel --bg --https=10000 http://127.0.0.1:8017
+# tailnet only instead: tailscale funnel --https=10000 off && tailscale serve --bg --https=10000 http://127.0.0.1:8017
 ```
 
 The app is then at <https://studio.tailc33641.ts.net:10000/>. Host and port are
