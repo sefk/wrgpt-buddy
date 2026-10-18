@@ -8,7 +8,7 @@
   <h2>Table {{ table.name }}</h2>
   <div class="scroll">
   <table class="hist">
-    <thead><tr><th>Hand</th><th>Date</th><th>My cards</th><th>Result</th><th class="num">Net</th><th>Winner</th><th title="Each model vs. what you did, per betting round: Sonnet, Qwen, gpt-oss">Rec</th></tr></thead>
+    <thead><tr><th>Hand</th><th>Date</th><th>My cards</th><th>Result</th><th class="num">Net</th><th>Winner</th><th title="Each model vs. what you did, per betting round: Sonnet, Qwen, gpt-oss, Qwen Flash">Rec</th></tr></thead>
     <tbody>
     {% for r in rows %}
       <tr class="{% if r.result == 'folded' %}folded{% endif %}">

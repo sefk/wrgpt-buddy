@@ -395,7 +395,7 @@ def hand_detail(request, table, number):
     return render(request, "poker/hand_detail.html", ctx)
 
 
-HISTORY_MODELS = ("Sonnet", "Qwen", "gpt-oss")
+HISTORY_MODELS = ("Sonnet", "Qwen", "gpt-oss", "Qwen Flash")
 ROUND_LETTERS = {1: "P", 2: "F", 3: "T", 4: "R"}
 HISTORY_TOLERANCE = 0.5  # model and I "agree" when our amounts are within 50%
 HISTORY_GRADE_CSS = {grading.AGREE: "agree", grading.SIZE: "size", grading.DIFFERENT: "differ"}

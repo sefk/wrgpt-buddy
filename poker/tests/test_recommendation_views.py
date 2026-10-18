@@ -287,6 +287,17 @@ def test_history_grid_grades_each_model_against_my_move(hand, client):
     assert 'title="gpt-oss: fold (different action; you raise $1,500)"' in flop
 
 
+def test_history_grid_has_a_fourth_dot_for_qwen_flash(hand, client):
+    rec = done(hand, agree=False, decision_key="a", point="r1n1",
+               actual={"action": "raise", "amount": 500, "text": "sefk raises to $500"})
+    rec.opinions = [*rec.opinions, dict(QWEN, label="Qwen Flash", model="qwen/qwen3.8-flash",
+                                        action="raise", amount=600)]
+    rec.save()
+    grid = _grid(client)
+    assert grid.count("<i class=") == 4
+    assert 'title="Qwen Flash: raise $600 (agrees; you raise $500)"' in grid
+
+
 def test_history_grid_shows_worst_of_a_rounds_decisions(hand, client):
     done(hand, agree=False, decision_key="a", point="r2n1",
          actual={"action": "raise", "amount": 600, "text": "sefk raises to $600"})
