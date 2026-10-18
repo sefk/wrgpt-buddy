@@ -245,6 +245,10 @@ def parse_broadcast(subject: str, body: str) -> Broadcast:
         if m := re.match(r"^(.+?) is (?:next|first) to act(?:, \$([\d,]+) to call)?$", text):
             next_to_act = m[1]
             to_call = _money(m[2]) if m[2] else None
+        elif m := re.match(r"^Checked to (.+?)\s*$", text):
+            # The player before checked, so nothing to call (no "is next to act" line).
+            next_to_act = m[1]
+            to_call = None
         elif m := re.match(r"^Pot size:\s*\$([\d,]+)", text):
             pot = _money(m[1])
         elif m := re.match(r"^Next timeout set for (.*)$", text):

@@ -104,6 +104,9 @@ def test_first_to_act_and_checked_to():
     assert b.events[3].cards == ("As", "6c", "Th")
     b = by_seq(10030)
     assert [e.kind for e in b.events] == [EventKind.CHECK]
+    # "Checked to X" is the only sign of whose turn it is after a check.
+    assert b.next_to_act == "Capparella" and b.to_call is None
+    assert by_seq(10031).next_to_act == "Bryan Currie"
 
 
 def test_10034_final():
