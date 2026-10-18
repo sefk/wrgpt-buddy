@@ -35,6 +35,14 @@ def test_backfill_skips_other_years(hand):
     assert not Recommendation.objects.exists()
 
 
+def test_backfill_table_filter(hand):
+    year = str((hand.started_at or hand.ended_at).year)
+    call_command("backfill_analyses", "--year", year, "--table", "nope")
+    assert not Recommendation.objects.exists()
+    call_command("backfill_analyses", "--year", year, "--table", "b17")
+    assert Recommendation.objects.exists()
+
+
 def test_queue_runs_backfill_after_newer_live_work(hand):
     old = Recommendation.objects.create(hand=hand, point="r1n1", decision_key="backfill-r1n1")
     new = Recommendation.objects.create(hand=hand, point="", decision_key="seq1")
