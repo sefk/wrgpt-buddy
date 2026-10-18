@@ -43,14 +43,16 @@ static files come from whitenoise
 (`staticfiles/`); `tailscale serve` provides tailnet-only HTTPS.
 
 ```sh
-bin/install-launchd     # renders deploy/launchd/*.plist.in, loads all three agents
+bin/install-launchd     # renders deploy/launchd/*.plist.in into /Library/LaunchDaemons (sudo), loads all three
 bin/deploy              # waits for any running analysis (worker paused), then sync, migrate,
                         # collectstatic, restart web and the recommend worker; --now skips the wait
-bin/status              # launchd state, log tails, last poll result
-bin/uninstall-launchd
+bin/status              # launchd state (system domain), log tails, last poll result
+bin/uninstall-launchd   # sudo
 ```
 
-Agents: `com.sefk.wrgpt-buddy.web` (gunicorn, KeepAlive) and
+The jobs are system LaunchDaemons that run as your user, so they start at boot with nobody
+logged in; `bin/install-launchd`, `bin/deploy` and `bin/uninstall-launchd` ask for sudo.
+Jobs: `com.sefk.wrgpt-buddy.web` (gunicorn, KeepAlive) and
 `com.sefk.wrgpt-buddy.poll` (`bin/poll` every 180s). A failed poll writes
 `POLL FAILED (exit N)` and the error to `poll.err.log`, and `bin/status`
 reports the non-zero exit. Typical cause: expired Gmail auth, so re-run
@@ -105,7 +107,7 @@ uv run manage.py recommend_worker       # long-running loop that handles queued/
 uv run manage.py recommend_worker --once  # a single pass, then exit
 ```
 
-The worker is a launchd job (`bin/install-launchd` loads it; `bin/status` shows
+The worker is a launchd daemon (`bin/install-launchd` loads it; `bin/status` shows
 its state and log tails). Logs: `~/Library/Logs/wrgpt-buddy/recommend.{out,err}.log`.
 
 ## Where things live

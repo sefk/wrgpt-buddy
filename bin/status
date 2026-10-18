@@ -4,7 +4,7 @@ set -uo pipefail
 . "$(dirname "$0")/_common.sh"
 for label in "$WEB_LABEL" "$POLL_LABEL" "$RECOMMEND_LABEL"; do
   echo "== $label"
-  if out="$(launchctl print "$GUI/$label" 2>&1)"; then
+  if out="$(launchctl print "$SYS/$label" 2>&1)"; then
     echo "$out" | grep -E '^\s*(state|pid|runs|last exit code|run interval|program) ' || true
   else
     echo "not loaded"
@@ -17,7 +17,7 @@ done
 echo
 echo "== last poll"
 poll_status() {
-  local last_exit; last_exit="$(launchctl print "$GUI/$POLL_LABEL" 2>/dev/null | awk -F'= ' '/last exit code/{print $2; exit}')"
+  local last_exit; last_exit="$(launchctl print "$SYS/$POLL_LABEL" 2>/dev/null | awk -F'= ' '/last exit code/{print $2; exit}')"
   [ -n "$last_exit" ] && echo "last exit code: $last_exit"
   if [ -n "$last_exit" ] && [ "$last_exit" != "0" ]; then echo "POLL FAILING (see poll.err.log)"; fi
   # bin/poll tees failures to stdout too, so poll.out.log alone is in order

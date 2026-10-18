@@ -3,11 +3,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 UV=/opt/homebrew/bin/uv
 [ -x "$UV" ] || UV="$(command -v uv)"
 LOG_DIR="$HOME/Library/Logs/wrgpt-buddy"
-AGENTS_DIR="$HOME/Library/LaunchAgents"
+AGENTS_DIR="$HOME/Library/LaunchAgents"   # legacy per-user agents, only cleaned up
+DAEMONS_DIR=/Library/LaunchDaemons
 WEB_LABEL=com.sefk.wrgpt-buddy.web
 POLL_LABEL=com.sefk.wrgpt-buddy.poll
 RECOMMEND_LABEL=com.sefk.wrgpt-buddy.recommend
-GUI="gui/$(id -u)"
+GUI="gui/$(id -u)"   # legacy per-user domain
+SYS=system
 unset VIRTUAL_ENV
 
 ensure_env() {

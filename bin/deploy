@@ -35,9 +35,11 @@ ensure_env
 "$UV" sync
 "$UV" run manage.py migrate --noinput
 "$UV" run manage.py collectstatic --noinput
+# The jobs are system LaunchDaemons: viewing them is free, restarting needs sudo.
+sudo -v
 for label in "$WEB_LABEL" "$RECOMMEND_LABEL"; do
-  if launchctl print "$GUI/$label" >/dev/null 2>&1; then
-    launchctl kickstart -k "$GUI/$label"
+  if launchctl print "$SYS/$label" >/dev/null 2>&1; then
+    sudo launchctl kickstart -k "$SYS/$label"
     echo "$label restarted"
   else
     echo "$label not loaded; run bin/install-launchd"

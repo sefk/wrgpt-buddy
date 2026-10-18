@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
+# Unload and remove the system LaunchDaemons (and any legacy per-user agents). Needs sudo.
 set -euo pipefail
 . "$(dirname "$0")/_common.sh"
 for label in "$WEB_LABEL" "$POLL_LABEL" "$RECOMMEND_LABEL"; do
   launchctl bootout "$GUI/$label" 2>/dev/null || true
   rm -f "$AGENTS_DIR/$label.plist"
+  sudo launchctl bootout "$SYS/$label" 2>/dev/null || true
+  sudo rm -f "$DAEMONS_DIR/$label.plist"
   echo "removed $label"
 done
