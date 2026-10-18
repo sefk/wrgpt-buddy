@@ -109,7 +109,7 @@ def run(rec: Recommendation) -> Recommendation:
         local.ensure_server(log)
         for model, label in settings.ADVICE_LOCAL_MODELS:
             _step(rec, label, "running")
-            locals_.append(local.ask(model, label, rec.prompt))
+            locals_.append(local.run(model, label, rec.prompt, log))
             _step(rec, label, "done", locals_[-1])
             log.info("%s: %s %s in %ss %s", rec, label, locals_[-1]["action"], locals_[-1]["seconds"], locals_[-1]["error"])
         _step(rec, "sonnet", "running")

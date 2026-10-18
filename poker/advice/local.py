@@ -42,6 +42,40 @@ def ensure_server(log=None) -> bool:
     return server_up()
 
 
+def loaded_models() -> set[str] | None:
+    """Identifiers of models currently loaded in LM Studio; None if `lms ps` fails."""
+    import subprocess
+
+    try:
+        r = subprocess.run([settings.ADVICE_LMS_BIN, "ps", "--json"],
+                           capture_output=True, text=True, timeout=30)
+        return {m["identifier"] for m in json.loads(r.stdout)}
+    except (OSError, subprocess.TimeoutExpired, ValueError, KeyError, TypeError):
+        return None
+
+
+def ensure_model(model: str, log=None) -> str:
+    """Load `model` explicitly if it isn't loaded (JIT loads right after a reboot
+    have stalled for the whole request timeout). Returns "" or an error message."""
+    import subprocess
+
+    if model in (loaded_models() or ()):
+        return ""
+    if log:
+        log.warning("%s not loaded; running `lms load`", model)
+    try:
+        r = subprocess.run(
+            [settings.ADVICE_LMS_BIN, "load", model, "--identifier", model,
+             "--context-length", str(settings.ADVICE_LOCAL_CONTEXT),
+             "--ttl", str(settings.ADVICE_LOCAL_TTL_S), "-y"],
+            capture_output=True, text=True, timeout=settings.ADVICE_LOCAL_LOAD_TIMEOUT_S)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return f"lms load {model} failed: {type(exc).__name__}: {exc}"
+    if r.returncode != 0:
+        return f"lms load {model} failed: {(r.stderr or r.stdout).strip()[-300:]}"
+    return ""
+
+
 def _post(url: str, payload: dict, timeout: float) -> dict:
     req = urllib.request.Request(
         url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"}
@@ -65,9 +99,24 @@ def _parse(content: str) -> dict:
         return json.loads(m.group(0))
 
 
+def _blank(model: str, label: str) -> dict:
+    return {"model": model, "label": label, "action": "", "amount": None, "command": "",
+            "reasoning": "", "error": "", "seconds": 0.0}
+
+
+def run(model: str, label: str, prompt: str, log=None) -> dict:
+    """ensure_model, then ask; a failed load is recorded like any other error."""
+    t0 = time.monotonic()
+    err = ensure_model(model, log)
+    if err:
+        out = _blank(model, label)
+        out["error"], out["seconds"] = err, round(time.monotonic() - t0, 1)
+        return out
+    return ask(model, label, prompt)
+
+
 def ask(model: str, label: str, prompt: str) -> dict:
-    out = {"model": model, "label": label, "action": "", "amount": None, "command": "",
-           "reasoning": "", "error": "", "seconds": 0.0}
+    out = _blank(model, label)
     t0 = time.monotonic()
     payload = {
         "model": model,

@@ -83,7 +83,10 @@ the `claude` CLI, all in parallel. A judge turn then continues the Sonnet
 conversation, reusing its prompt cache, with both local answers added, and
 compares the three. Each local model is graded against Sonnet: agree, same
 action with a different size, or different action. Model names and settings are
-in `buddy/settings.py` (`ADVICE_*`).
+in `buddy/settings.py` (`ADVICE_*`). Before each local call the app checks
+`lms ps` and runs `lms load` (32k context, 1h TTL) if the model isn't loaded,
+because JIT loads right after a reboot have stalled. The request timeout then
+covers inference only (`ADVICE_LOCAL_TIMEOUT_S`, 300s).
 
 The analysis runs automatically but stays hidden. The hand page shows only
 "Ready" until you press Show recommendation. You can also press Request

@@ -89,6 +89,7 @@ def fakes(monkeypatch, tmp_path, settings):
         return subprocess.CompletedProcess(cmd, 0, json.dumps(out), "")
 
     monkeypatch.setattr(local, "_post", fake_post)
+    monkeypatch.setattr(local, "ensure_model", lambda model, log=None: "")
     monkeypatch.setattr(sonnet.subprocess, "run", fake_run)
     return calls
 
@@ -192,6 +193,7 @@ def test_engine_timeout_and_is_error(my_turn, fakes, monkeypatch):
 
 def test_engine_all_fail(my_turn, monkeypatch, settings, tmp_path):
     settings.ADVICE_CLAUDE_CWD = tmp_path
+    monkeypatch.setattr(local, "ensure_model", lambda model, log=None: "")
     monkeypatch.setattr(local, "_post", lambda *a: (_ for _ in ()).throw(OSError("down")))
     monkeypatch.setattr(sonnet.subprocess, "run",
                         lambda cmd, **kw: subprocess.CompletedProcess(cmd, 2, "", "x"))
@@ -387,6 +389,35 @@ def test_ensure_server_starts_lm_studio_when_down(monkeypatch):
     assert calls and calls[0][1:] == ["server", "start"]
     calls.clear()
     assert local.ensure_server() is True and calls == []  # already up: no-op
+
+
+def test_ensure_model_loads_only_when_missing(monkeypatch):
+    from poker.advice import local
+
+    calls = []
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        out = json.dumps([{"identifier": "have/it"}]) if cmd[1] == "ps" else ""
+        return subprocess.CompletedProcess(cmd, 0, out, "")
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    assert local.ensure_model("have/it") == ""
+    assert [c[1] for c in calls] == ["ps"]
+    calls.clear()
+    assert local.ensure_model("need/it") == ""
+    load = calls[1]
+    assert load[1:3] == ["load", "need/it"] and flag(load, "--ttl") == "3600"
+    assert flag(load, "--context-length") == "32768"
+
+
+def test_run_records_a_failed_load(monkeypatch):
+    from poker.advice import local
+
+    monkeypatch.setattr(local, "ensure_model", lambda model, log=None: "lms load m failed: boom")
+    monkeypatch.setattr(local, "_post", lambda *a: pytest.fail("must not ask"))
+    o = local.run("m", "M", "p")
+    assert o["error"].endswith("boom") and not o["action"]
 
 
 def test_run_keeps_a_relink_made_mid_run(my_turn, fakes, monkeypatch):
