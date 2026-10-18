@@ -201,6 +201,15 @@ ADVICE_LOCAL_TIMEOUT_S = int(os.environ.get('ADVICE_LOCAL_TIMEOUT_S', '300'))
 ADVICE_LOCAL_LOAD_TIMEOUT_S = int(os.environ.get('ADVICE_LOCAL_LOAD_TIMEOUT_S', '300'))
 ADVICE_LOCAL_CONTEXT = int(os.environ.get('ADVICE_LOCAL_CONTEXT', '32768'))
 ADVICE_LOCAL_TTL_S = int(os.environ.get('ADVICE_LOCAL_TTL_S', '3600'))
+# Models too big for this machine, served by OpenRouter. Skipped when there is no key.
+OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
+OPENROUTER_URL = os.environ.get('OPENROUTER_URL', 'https://openrouter.ai/api/v1')
+ADVICE_REMOTE_MODELS = [('qwen/qwen3.8-flash', 'Qwen Flash')]
+if os.environ.get('ADVICE_REMOTE_MODELS') is not None:  # "model_id=Label,model_id=Label"; empty disables
+    ADVICE_REMOTE_MODELS = [
+        tuple(p.split('=', 1)) for p in _env_list('ADVICE_REMOTE_MODELS') if '=' in p
+    ]
+ADVICE_REMOTE_TIMEOUT_S = int(os.environ.get('ADVICE_REMOTE_TIMEOUT_S', '180'))
 ADVICE_LMS_BIN = os.environ.get('ADVICE_LMS_BIN', str(Path.home() / '.lmstudio/bin/lms'))
 ADVICE_CLAUDE_BIN = os.environ.get('ADVICE_CLAUDE_BIN', str(Path.home() / '.local/bin/claude'))
 ADVICE_CLAUDE_MODEL = os.environ.get('ADVICE_CLAUDE_MODEL', 'sonnet')

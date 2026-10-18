@@ -420,6 +420,43 @@ def test_run_records_a_failed_load(monkeypatch):
     assert o["error"].endswith("boom") and not o["action"]
 
 
+def test_remote_model_uses_openrouter_and_reports_cost(monkeypatch, settings):
+    settings.OPENROUTER_API_KEY = "sk-or-test"
+    seen = {}
+
+    def fake_post(url, payload, timeout, headers=None):
+        seen.update(url=url, payload=payload, headers=headers)
+        body = {"action": "fold", "amount": None, "command": "fold", "reasoning": "r"}
+        return {"choices": [{"message": {"content": json.dumps(body)}}], "usage": {"cost": 0.0031}}
+
+    monkeypatch.setattr(local, "_post", fake_post)
+    o = local.run_remote("qwen/qwen3.8-flash", "Qwen Flash", "p")
+    assert o["action"] == "fold" and o["cost"] == pytest.approx(0.0031) and not o["error"]
+    assert seen["url"] == "https://openrouter.ai/api/v1/chat/completions"
+    assert seen["headers"] == {"Authorization": "Bearer sk-or-test"}
+    assert seen["payload"]["usage"] == {"include": True}
+
+
+def test_remote_model_without_key_is_an_error(monkeypatch):
+    monkeypatch.setattr(local, "_post", lambda *a, **k: pytest.fail("must not call"))
+    assert "OPENROUTER_API_KEY" in local.run_remote("m", "M", "p")["error"]
+
+
+def test_engine_adds_remote_opinion_and_cost(my_turn, fakes, monkeypatch, settings):
+    settings.OPENROUTER_API_KEY = "sk-or-test"
+    settings.ADVICE_REMOTE_MODELS = [("qwen/qwen3.8-flash", "Qwen Flash")]
+    monkeypatch.setattr(local, "run_remote", lambda m, label, p: {
+        "model": m, "label": label, "action": "call", "amount": None, "command": "call *",
+        "reasoning": "r", "error": "", "seconds": 1.0, "cost": 0.003})
+    rec = Recommendation.objects.create(hand=my_turn, decision_key=engine.decision_key(my_turn))
+    engine.run(rec)
+    rec.refresh_from_db()
+    assert rec.status == "done", rec.error
+    assert [o["label"] for o in rec.opinions] == ["Sonnet", "Qwen", "gpt-oss", "Qwen Flash"]
+    assert float(rec.cost_usd) == pytest.approx(0.103)
+    assert [s["label"] for s in rec.steps][1:3] == ["gpt-oss (local)", "Qwen Flash (OpenRouter)"]
+
+
 def test_run_keeps_a_relink_made_mid_run(my_turn, fakes, monkeypatch):
     # `reparse` can relink the row to a rebuilt Hand while models are thinking; run()'s
     # saves must not write the old hand id back.

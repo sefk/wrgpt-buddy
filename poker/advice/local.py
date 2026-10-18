@@ -76,16 +76,17 @@ def ensure_model(model: str, log=None) -> str:
     return ""
 
 
-def _post(url: str, payload: dict, timeout: float) -> dict:
+def _post(url: str, payload: dict, timeout: float, headers: dict | None = None) -> dict:
     req = urllib.request.Request(
-        url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"}
+        url, data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json", **(headers or {})},
     )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
         body = e.read().decode(errors="replace")[:400]
-        raise RuntimeError(f"LM Studio HTTP {e.code}: {body}") from e
+        raise RuntimeError(f"HTTP {e.code} from {url.split('/v1')[0]}: {body}") from e
 
 
 def _parse(content: str) -> dict:
@@ -115,7 +116,16 @@ def run(model: str, label: str, prompt: str, log=None) -> dict:
     return ask(model, label, prompt)
 
 
-def ask(model: str, label: str, prompt: str) -> dict:
+def run_remote(model: str, label: str, prompt: str) -> dict:
+    """Ask a model hosted on OpenRouter (same chat API as LM Studio, plus a key and a cost)."""
+    if not settings.OPENROUTER_API_KEY:
+        out = _blank(model, label)
+        out["error"] = "OPENROUTER_API_KEY is not set"
+        return out
+    return ask(model, label, prompt, remote=True)
+
+
+def ask(model: str, label: str, prompt: str, remote: bool = False) -> dict:
     out = _blank(model, label)
     t0 = time.monotonic()
     payload = {
@@ -129,8 +139,15 @@ def ask(model: str, label: str, prompt: str) -> dict:
         },
     }
     try:
-        resp = _post(settings.ADVICE_LMSTUDIO_URL.rstrip("/") + "/chat/completions",
-                     payload, settings.ADVICE_LOCAL_TIMEOUT_S)
+        if remote:
+            payload["usage"] = {"include": True}  # OpenRouter reports the cost of the call
+            resp = _post(settings.OPENROUTER_URL.rstrip("/") + "/chat/completions", payload,
+                         settings.ADVICE_REMOTE_TIMEOUT_S,
+                         {"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}"})
+            out["cost"] = float((resp.get("usage") or {}).get("cost") or 0)
+        else:
+            resp = _post(settings.ADVICE_LMSTUDIO_URL.rstrip("/") + "/chat/completions",
+                         payload, settings.ADVICE_LOCAL_TIMEOUT_S)
         msg = resp["choices"][0]["message"]
         # Reasoning models served by LM Studio sometimes put the answer in reasoning_content.
         data = _parse(msg.get("content") or msg.get("reasoning_content"))

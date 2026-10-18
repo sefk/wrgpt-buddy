@@ -88,6 +88,11 @@ in `buddy/settings.py` (`ADVICE_*`). Before each local call the app checks
 because JIT loads right after a reboot have stalled. The request timeout then
 covers inference only (`ADVICE_LOCAL_TIMEOUT_S`, 300s).
 
+A fourth model, Qwen Flash (`qwen/qwen3.8-flash`), runs on OpenRouter, about
+$0.003 per decision, and is counted in the recommendation's cost. Set
+`OPENROUTER_API_KEY` in `.env` to enable it; without a key it is skipped. Change
+the model with `ADVICE_REMOTE_MODELS` (`model_id=Label`; empty disables it).
+
 The analysis runs automatically but stays hidden. The hand page shows only
 "Ready" until you press Show recommendation. You can also press Request
 analysis (or Retry / Re-analyze when the hand has moved on) to queue one. The

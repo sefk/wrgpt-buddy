@@ -18,7 +18,7 @@ from .points import actual_move, is_past, live_point, my_decisions
 from .prompt import build_prompt
 
 log = logging.getLogger("poker.advice")
-STALE_AFTER = timedelta(minutes=45)  # longer than a run can take: 2 local + 2 Claude timeouts
+STALE_AFTER = timedelta(minutes=45)  # longer than a run can take: local, remote and Claude timeouts
 # What run() writes. Never hand/table_name/hand_number: `reparse` may relink the row
 # to a rebuilt Hand mid-run, and a full save would write back the deleted hand id.
 RESULT_FIELDS = ["status", "started_at", "finished_at", "error", "actual", "actual_grade", "prompt",
@@ -44,11 +44,17 @@ def past_decision_key(point: str) -> str:
     return f"pt-{point}-{timezone.now():%Y%m%d%H%M%S%f}"
 
 
+def remote_models() -> list[tuple[str, str]]:
+    return list(settings.ADVICE_REMOTE_MODELS) if settings.OPENROUTER_API_KEY else []
+
+
 def default_steps() -> list[dict]:
-    """The four steps of an analysis, all waiting."""
+    """The steps of an analysis, all waiting."""
     return [
         *({"key": label, "label": f"{label} (local)", "status": "waiting"}
           for _, label in settings.ADVICE_LOCAL_MODELS),
+        *({"key": label, "label": f"{label} (OpenRouter)", "status": "waiting"}
+          for _, label in remote_models()),
         {"key": "sonnet", "label": "Sonnet's move", "status": "waiting"},
         {"key": "judge", "label": "Sonnet judges", "status": "waiting"},
     ]
@@ -112,6 +118,13 @@ def run(rec: Recommendation) -> Recommendation:
             locals_.append(local.run(model, label, rec.prompt, log))
             _step(rec, label, "done", locals_[-1])
             log.info("%s: %s %s in %ss %s", rec, label, locals_[-1]["action"], locals_[-1]["seconds"], locals_[-1]["error"])
+        for model, label in remote_models():
+            _step(rec, label, "running")
+            locals_.append(local.run_remote(model, label, rec.prompt))
+            _step(rec, label, "done", locals_[-1])
+            cost += locals_[-1].get("cost", 0.0)
+            log.info("%s: %s %s in %ss $%s %s", rec, label, locals_[-1]["action"], locals_[-1]["seconds"],
+                     locals_[-1].get("cost", 0), locals_[-1]["error"])
         _step(rec, "sonnet", "running")
         son, session, c = sonnet.recommend(rec.prompt)
         _step(rec, "sonnet", "done", son)
