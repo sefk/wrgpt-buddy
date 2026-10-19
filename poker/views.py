@@ -78,6 +78,16 @@ def _shows(actions):
     return out
 
 
+def _last_nta(actions):
+    """Fallback: scan the action log backwards for 'is next to act' text."""
+    pat = re.compile(r"^(.+?)\s+is next to act")
+    for a in reversed(actions):
+        m = pat.match(a.text)
+        if m:
+            return m.group(1).strip()
+    return None
+
+
 def _detail_context(hand, open_point=""):
     me = _me()
     actions = list(hand.actions.select_related("player"))
@@ -85,7 +95,7 @@ def _detail_context(hand, open_point=""):
     shows = _shows(actions)
     chips = _chips_in(hand, actions)
     mine = MyHand.objects.filter(hand=hand).first()
-    nta = hand.next_to_act.name if hand.next_to_act else None
+    nta = hand.next_to_act.name if hand.next_to_act else _last_nta(actions)
 
     rows = []
     for s in seats:
