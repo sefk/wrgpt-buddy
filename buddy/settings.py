@@ -100,10 +100,13 @@ WSGI_APPLICATION = 'buddy.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
+db_name = BASE_DIR / 'db.sqlite3'
+if os.environ.get('DB_PATH'):
+    db_name = BASE_DIR / os.environ['DB_PATH']
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': db_name,
     }
 }
 
