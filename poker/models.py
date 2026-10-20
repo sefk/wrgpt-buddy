@@ -233,3 +233,28 @@ class Recommendation(models.Model):
             self.table_name = self.hand.table.name
             self.hand_number = self.hand.number
         super().save(*args, **kwargs)
+
+
+class PlayerProfile(models.Model):
+    """Aggregated stats and classification for one player at one table."""
+
+    table = models.ForeignKey(Table, on_delete=models.CASCADE, related_name="profiles")
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="profiles")
+    hands_played = models.PositiveIntegerField(default=0)
+    folds = models.PositiveIntegerField(default=0)
+    checks = models.PositiveIntegerField(default=0)
+    calls = models.PositiveIntegerField(default=0)
+    bets = models.PositiveIntegerField(default=0)
+    raises = models.PositiveIntegerField(default=0)
+    all_ins = models.PositiveIntegerField(default=0)
+    total_blinds = models.PositiveIntegerField(default=0)
+    net_winnings = models.IntegerField(default=0)
+    showdowns = models.PositiveIntegerField(default=0)
+    classification = models.CharField(max_length=20, blank=True)
+
+    class Meta:
+        unique_together = [("table", "player")]
+        ordering = ["player__name"]
+
+    def __str__(self):
+        return f"{self.table.name} / {self.player.name} ({self.classification})"

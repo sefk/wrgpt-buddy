@@ -8,7 +8,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Action, Hand, MyHand, Player, RawEmail, Seat, Table
+from .models import Action, Hand, MyHand, Player, PlayerProfile, RawEmail, Seat, Table
 from .parsing.types import (
     AdvanceAck,
     DealerError,
@@ -313,7 +313,7 @@ def parse_raw(raw_email: RawEmail) -> ParsedEmail:
 @transaction.atomic
 def rebuild_all(parse=parse_raw) -> int:
     """Wipe derived tables, then re-parse and re-apply every RawEmail in sent_at order."""
-    for model in (Action, MyHand, Seat, Hand, Table, Player):
+    for model in (Action, MyHand, Seat, Hand, Table, Player, PlayerProfile):
         model.objects.all().delete()
     n = 0
     for raw in RawEmail.objects.order_by("sent_at", "id"):
@@ -336,3 +336,151 @@ def relink_recommendations() -> int:
             rec.save(update_fields=["hand"])
             n += 1
     return n
+
+
+# --- Player profiles: aggregation + classification ---
+
+_ACTION_KINDS = {"fold", "check", "call", "bet", "raise", "all_in"}
+
+
+def _classify(hands_played: int, fold_rate: float, aggr: float) -> str:
+    """Classify a player from aggregate stats.
+
+    fold_rate = folds / (folds + checks + calls + bets + raises + all_ins)
+    aggr = (bets + raises + all_ins) / (checks + calls + bets + raises + all_ins)
+    """
+    if hands_played < 3:
+        return ""
+
+    tight = fold_rate >= 0.70
+    loose = fold_rate < 0.40
+    passive = aggr < 0.30
+    aggressive = aggr >= 0.50
+
+    if tight and passive:
+        return "rock"
+    if loose and aggressive:
+        return "maniac"
+    if loose and passive:
+        return "calling station"
+    if tight and aggressive:
+        return "aggressive"
+    if loose:
+        return "loose"
+    if tight:
+        return "tight"
+    return ""
+
+
+def build_profiles(table_name: str) -> int:
+    """Rebuild all PlayerProfile rows for one table from its actions.
+
+    Returns the number of profiles created or updated.
+    """
+    from django.db.models import Case, F, Sum, When
+
+    table = Table.objects.get(name=table_name)
+    hands = Hand.objects.filter(table=table).exclude(number=0)
+    actions = Action.objects.filter(hand__in=hands)
+
+    # Per-player aggregates
+    stats = {}
+    for a in actions:
+        if a.player is None:
+            continue
+        name = a.player.name
+        s = stats.setdefault(name, {
+            "folds": 0, "checks": 0, "calls": 0,
+            "bets": 0, "raises": 0, "all_ins": 0,
+            "total_blinds": 0, "net_winnings": 0,
+            "showdowns": 0, "hands": set(),
+        })
+        s["hands"].add(a.hand_id)
+        if a.kind == "blind":
+            s["total_blinds"] += a.amount or 0
+        elif a.kind in ("fold", "vacation_fold"):
+            s["folds"] += 1
+        elif a.kind == "check":
+            s["checks"] += 1
+        elif a.kind == "call":
+            s["calls"] += 1
+        elif a.kind == "bet":
+            s["bets"] += 1
+        elif a.kind == "raise":
+            s["raises"] += 1
+        elif a.kind == "all_in":
+            s["all_ins"] += 1
+
+    # Net winnings from ending bankrolls
+    for h in hands.filter(is_over=True):
+        for seat in h.seats.all():
+            if seat.bankroll_start is not None and seat.bankroll_end is not None:
+                delta = seat.bankroll_end - seat.bankroll_start
+                if delta != 0:
+                    stats.setdefault(seat.player.name, {
+                        "folds": 0, "checks": 0, "calls": 0,
+                        "bets": 0, "raises": 0, "all_ins": 0,
+                        "total_blinds": 0, "net_winnings": 0,
+                        "showdowns": 0, "hands": set(),
+                    })["net_winnings"] += delta
+
+    # Count showdowns: hands where the player's status indicates they were in the hand at the end
+    # We count a hand as a showdown for a player if they didn't fold and the hand went to showdown
+    for h in hands.filter(is_over=True, winner__contains="with"):
+        # Simplified: count hands where player was in the hand (had a seat)
+        # A more accurate count would need showdown cards, but this is close enough
+        for seat in h.seats.filter(status__contains="with"):
+            stats.setdefault(seat.player.name, {
+                "folds": 0, "checks": 0, "calls": 0,
+                "bets": 0, "raises": 0, "all_ins": 0,
+                "total_blinds": 0, "net_winnings": 0,
+                "showdowns": 0, "hands": set(),
+            })["showdowns"] += 1
+
+    n = 0
+    for name, s in stats.items():
+        hands_played = len(s["hands"])
+        if hands_played < 1:
+            continue
+        total_actions = (s["folds"] + s["checks"] + s["calls"]
+                         + s["bets"] + s["raises"] + s["all_ins"])
+        fold_rate = s["folds"] / total_actions if total_actions > 0 else 0.5
+        aggr = (s["bets"] + s["raises"] + s["all_ins"]) / total_actions if total_actions > 0 else 0.5
+
+        classification = _classify(hands_played, fold_rate, aggr)
+
+        profile, created = PlayerProfile.objects.update_or_create(
+            table=table,
+            player=_player(name),
+            defaults={
+                "hands_played": hands_played,
+                "folds": s["folds"],
+                "checks": s["checks"],
+                "calls": s["calls"],
+                "bets": s["bets"],
+                "raises": s["raises"],
+                "all_ins": s["all_ins"],
+                "total_blinds": s["total_blinds"],
+                "net_winnings": s["net_winnings"],
+                "showdowns": s["showdowns"],
+                "classification": classification,
+            },
+        )
+        n += 1
+
+    # Delete profiles for players who no longer appear at this table
+    PlayerProfile.objects.filter(table=table).exclude(
+        player__name__in=stats.keys()
+    ).delete()
+
+    return n
+
+
+def get_profile(table_name: str, player_name: str) -> PlayerProfile | None:
+    """Get the profile for one player at one table."""
+    try:
+        return PlayerProfile.objects.get(
+            table__name=table_name, player__name=player_name
+        )
+    except PlayerProfile.DoesNotExist:
+        return None

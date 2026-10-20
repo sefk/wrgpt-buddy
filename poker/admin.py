@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from . import models
 
-for m in (models.Player, models.Table, models.Hand, models.Seat, models.Action, models.MyHand):
+for m in (models.Player, models.Table, models.Hand, models.Seat, models.Action, models.MyHand, models.PlayerProfile):
     admin.site.register(m)
 
 

@@ -28,6 +28,10 @@ section { background: var(--panel); border: 1px solid var(--line); border-radius
 .title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .pill { display: inline-block; font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; text-transform: none; letter-spacing: 0; vertical-align: middle; background: var(--line); color: var(--text); }
 .pill.live { background: var(--accent); color: #fff; } .pill.turn { background: #d97706; color: #fff; } .pill.sticky { background: #6d4aff; color: #fff; }
+.pill.profile.tight { background: #64748b; } .pill.profile.loose { background: #dc2626; color: #fff; }
+.pill.profile.passive { background: #94a3b8; } .pill.profile.aggressive { background: #ea580c; color: #fff; }
+.pill.profile.calling-station { background: #16a34a; color: #fff; }
+.pill.profile.rock { background: #475569; color: #fff; } .pill.profile.maniac { background: #dc2626; color: #fff; }
 .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px 16px; margin: 8px 0; }
 .facts div { min-width: 0; } .facts .wide { grid-column: 1 / -1; }
 .facts dt { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }

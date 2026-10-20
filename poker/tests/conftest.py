@@ -1,4 +1,16 @@
+from pathlib import Path
+
 import pytest
+from django.core.management import call_command
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def imported():
+    call_command("import_eml", str(FIXTURES))
 
 
 @pytest.fixture(autouse=True)

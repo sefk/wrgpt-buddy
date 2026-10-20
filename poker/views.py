@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from .advice import engine, grading
 from .advice.points import live_point, my_decisions
-from .models import Action, Hand, MyHand, Recommendation
+from .models import Action, Hand, MyHand, PlayerProfile, Recommendation
 
 ROUND_NAMES = {1: "Preflop", 2: "Flop", 3: "Turn", 4: "River"}
 SHOWS_RE = re.compile(r"^\s*(.+?)\s+has:\s*(.+)$")
@@ -97,12 +97,21 @@ def _detail_context(hand, open_point=""):
     mine = MyHand.objects.filter(hand=hand).first()
     nta = hand.next_to_act.name if hand.next_to_act else _last_nta(actions)
 
+    # Build profiles for all opponents
+    profiles = {}
+    try:
+        for p in PlayerProfile.objects.filter(table=hand.table).select_related("player"):
+            profiles[p.player.name] = p
+    except Exception:
+        pass
+
     rows = []
     for s in seats:
         name = s.player.name
         delta = None
         if hand.is_over and s.bankroll_start is not None and s.bankroll_end is not None:
             delta = s.bankroll_end - s.bankroll_start
+        profile = profiles.get(name)
         rows.append({
             "seat": s,
             "name": name,
@@ -112,6 +121,7 @@ def _detail_context(hand, open_point=""):
             "chips": chips.get(s.player_id),
             "delta": delta,
             "shown": shows.get(name),
+            "profile": profile,
         })
 
     streets = OrderedDict()
