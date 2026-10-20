@@ -14,6 +14,7 @@
   <nav>
     <a href="{% url 'poker:current' %}" {% if nav == 'current' %}aria-current="page"{% endif %}>Current</a>
     <a href="{% url 'poker:hands' %}" {% if nav == 'hands' %}aria-current="page"{% endif %}>History</a>
+    <a href="{% url 'poker:analytics' %}" {% if nav == 'analytics' %}aria-current="page"{% endif %}>Analytics</a>
   </nav>
 </header>
 <main>

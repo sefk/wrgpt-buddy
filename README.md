@@ -110,6 +110,14 @@ uv run manage.py recommend_worker --once  # a single pass, then exit
 The worker is a launchd daemon (`bin/install-launchd` loads it; `bin/status` shows
 its state and log tails). Logs: `~/Library/Logs/wrgpt-buddy/recommend.{out,err}.log`.
 
+## Bankroll and analytics
+
+The history page shows your bankroll after each hand and your current bankroll in
+the heading. The Analytics tab graphs it per tournament (hand sequence by default,
+or real time), with a dashed marker wherever you moved to another table. A new
+tournament starts when a table change doesn't carry the bankroll over (see
+`poker/bankroll.py`). `?t=<n>&x=time` preselects a view.
+
 ## Where things live
 
 - Logs: `~/Library/Logs/wrgpt-buddy/{web,poll,recommend}.{out,err}.log`

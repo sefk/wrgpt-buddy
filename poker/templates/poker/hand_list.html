@@ -2,13 +2,13 @@
 {% load poker_extras %}
 {% block title %}Hand history · WRGPT Buddy{% endblock %}
 {% block content %}
-<h1>Hand history</h1>
+<h1>Hand history{% if bankroll is not None %} <span class="pill">Bankroll {{ bankroll|money }}</span>{% endif %}</h1>
 {% for table, rows in groups %}
 <section>
   <h2>Table {{ table.name }}</h2>
   <div class="scroll">
   <table class="hist">
-    <thead><tr><th>Hand</th><th>Date</th><th>My cards</th><th>Result</th><th class="num">Net</th><th>Winner</th><th title="Each model vs. what you did, per betting round: Sonnet, Qwen, gpt-oss, Qwen Flash">Rec</th></tr></thead>
+    <thead><tr><th>Hand</th><th>Date</th><th>My cards</th><th>Result</th><th class="num">Net</th><th class="num">Bankroll</th><th>Winner</th><th title="Each model vs. what you did, per betting round: Sonnet, Qwen, gpt-oss, Qwen Flash">Rec</th></tr></thead>
     <tbody>
     {% for r in rows %}
       <tr class="{% if r.result == 'folded' %}folded{% endif %}">
@@ -17,6 +17,7 @@
         <td class="c-cards">{% if r.cards %}{% cards r.cards %}{% else %}–{% endif %}</td>
         <td class="c-result">{{ r.result|default:"–" }}</td>
         <td class="num c-net">{% if r.net is not None %}<span class="{% if r.net > 0 %}pos{% elif r.net < 0 %}neg{% endif %}">{{ r.net|signed_money }}</span>{% else %}–{% endif %}</td>
+        <td class="num c-bankroll">{{ r.bankroll|money }}</td>
         <td class="winner-cell c-winner">{{ r.winner|default:"–" }}{% if r.nwinners > 1 %} <span class="muted">+{{ r.nwinners|add:"-1" }}</span>{% endif %}</td>
         <td class="rec-ind c-rec">{% if r.rec %}<span class="recgrid">{% for row in r.rec %}<b>{{ row.letter }}</b>{% for c in row.cells %}{% if c %}<i class="rg-{{ c.css }}" title="{{ c.title }}">&#9679;</i>{% else %}<i></i>{% endif %}{% endfor %}{% endfor %}</span>{% endif %}</td>
       </tr>

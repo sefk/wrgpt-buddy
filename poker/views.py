@@ -11,6 +11,7 @@ from django.utils import timezone as djtz
 from django.views.decorators.http import require_POST
 
 from .advice import engine, grading
+from .bankroll import bankroll_series
 from .advice.points import live_point, my_decisions
 from .models import Action, Hand, MyHand, PlayerProfile, Recommendation
 from .state import MIN_HANDS_FOR_BADGE, PROFILE_BLURBS
@@ -515,6 +516,8 @@ def hand_list(request):
         .order_by("table__name", "-number")
     )
     rec_by_hand = _history_grades()
+    series = bankroll_series(me)
+    after_by_hand = {p["hand_id"]: p["after"] for t in series for p in t["points"]}
     folded_ids = set(
         Action.objects.filter(kind__in=("fold", "vacation_fold"), player__name=me)
         .values_list("hand_id", flat=True)
@@ -543,6 +546,7 @@ def hand_list(request):
             "rec": rec_by_hand.get(h.pk, []),
             "result": result,
             "net": net,
+            "bankroll": after_by_hand.get(h.pk),
             "winner": h.winner.splitlines()[0] if h.winner else "",
             "nwinners": len(h.winner.splitlines()) if h.winner else 0,
             "date": h.ended_at or h.started_at,
@@ -555,4 +559,11 @@ def hand_list(request):
         return max(dates) if dates else _EPOCH
 
     ordered = sorted(groups.items(), key=_latest, reverse=True)
-    return render(request, "poker/hand_list.html", {"groups": ordered, "me": me})
+    return render(request, "poker/hand_list.html", {
+        "groups": ordered, "me": me,
+        "bankroll": series[-1]["current"] if series else None,
+    })
+
+
+def analytics(request):
+    return render(request, "poker/analytics.html", {"nav": "analytics", "series": bankroll_series()})

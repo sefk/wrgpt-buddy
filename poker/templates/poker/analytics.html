@@ -1,0 +1,26 @@
+{% extends "poker/base.html" %}
+{% load static %}
+{% block title %}Analytics · WRGPT Buddy{% endblock %}
+{% block content %}
+<h1>Analytics</h1>
+{% if series %}
+<section>
+  <h2>Bankroll</h2>
+  <div class="chart-bar">
+    <label>Tournament <select id="tournament">
+      {% for t in series %}<option value="{{ forloop.counter0 }}"{% if forloop.last %} selected{% endif %}>{{ t.label }} ({{ t.tables|join:", " }})</option>{% endfor %}
+    </select></label>
+    <span>X axis:
+      <label><input type="radio" name="xmode" value="hand" checked> Hand sequence</label>
+      <label><input type="radio" name="xmode" value="time"> Real time</label>
+    </span>
+  </div>
+  <svg id="bankroll-chart" viewBox="0 0 800 340" role="img" aria-label="Bankroll over time"></svg>
+  <p class="chart-tip muted small" id="chart-tip">Dashed lines mark a move to a different table.</p>
+</section>
+{{ series|json_script:"bankroll-data" }}
+<script src="{% static 'poker/analytics.js' %}" defer></script>
+{% else %}
+<p class="muted">No bankroll data yet.</p>
+{% endif %}
+{% endblock %}

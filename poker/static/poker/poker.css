@@ -177,10 +177,11 @@ code { font-size: .88em; word-break: break-all; }
   section { padding: 10px 10px; }
   .hist thead { display: none; }
   .hist tr { display: grid; grid-template-columns: auto auto 1fr auto auto; grid-template-areas:
-      "hand cards result net rec" "date winner winner winner rec";
+      "hand cards result net rec" "date winner winner bankroll rec";
     column-gap: 10px; row-gap: 2px; align-items: center; padding: 8px 2px; border-bottom: 1px solid var(--line); }
   .hist td { border: 0; padding: 0; }
   .hist .c-hand { grid-area: hand; } .hist .c-cards { grid-area: cards; } .hist .c-result { grid-area: result; }
+  .hist .c-bankroll { grid-area: bankroll; font-size: .8rem; color: var(--muted); }
   .hist .c-net { grid-area: net; } .hist .c-rec { grid-area: rec; }
   .hist .c-date { grid-area: date; font-size: .8rem; color: var(--muted); }
   .hist .c-winner { grid-area: winner; font-size: .8rem; color: var(--muted); min-width: 0; }
@@ -193,3 +194,15 @@ code { font-size: .88em; word-break: break-all; }
 .legend dd { margin: 0; }
 .pill.profile.tight, .pill.profile.rock { color: #fff; }
 .profile-stats { width: auto; }
+
+.chart-bar { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin-bottom: 8px; }
+.chart-bar label { font-size: .9rem; }
+.chart-bar select, .chart-bar input { font: inherit; }
+#bankroll-chart { width: 100%; height: auto; display: block; }
+#bankroll-chart .grid { stroke: var(--line); }
+#bankroll-chart text { fill: var(--muted); font-size: 11px; }
+#bankroll-chart .line { fill: none; stroke: var(--accent); stroke-width: 2; }
+#bankroll-chart .dot { fill: var(--accent); }
+#bankroll-chart .event { stroke: #d97706; stroke-dasharray: 4 3; }
+#bankroll-chart text.event { fill: #d97706; font-weight: 600; stroke: none; }
+.chart-tip { min-height: 1.4em; }
