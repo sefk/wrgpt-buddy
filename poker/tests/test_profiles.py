@@ -91,3 +91,32 @@ class TestBuildProfiles:
                  "calling station", "rock", "maniac"}
         for p in PlayerProfile.objects.filter(table__name="b17"):
             assert p.classification in valid, f"{p.player.name}: {p.classification}"
+
+
+class TestProfilePages:
+    def test_legend_on_every_page(self, imported, client):
+        r = client.get("/hands/")
+        assert b"Player badges" in r.content
+        assert b"Calling station" in r.content
+
+    def test_badge_links_to_profile(self, imported, client):
+        from django.urls import reverse
+
+        build_profiles("b17")
+        p = PlayerProfile.objects.filter(table__name="b17").exclude(classification="").first()
+        if p is None:
+            pytest.skip("no classified player in fixtures")
+        r = client.get(reverse("poker:hand", args=["b17", 2]))
+        assert b"/profiles/b17/" in r.content
+
+    def test_profile_page(self, imported, client):
+        from django.urls import reverse
+
+        build_profiles("b17")
+        r = client.get(reverse("poker:player_profile", args=["b17", "sefk"]))
+        assert r.status_code == 200
+        assert b"Fold rate" in r.content
+        assert b"History" in r.content
+
+    def test_unknown_profile_404(self, imported, client):
+        assert client.get("/profiles/b17/nobody/").status_code == 404

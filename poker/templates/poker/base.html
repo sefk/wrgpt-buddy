@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+{% load static poker_extras %}<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -18,6 +18,7 @@
 </header>
 <main>
 {% block content %}{% endblock %}
+{% profile_legend %}
 </main>
 <footer>
   <a href="https://hands.wrgpt.org" rel="noopener">hands.wrgpt.org</a> ·

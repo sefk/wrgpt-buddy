@@ -28,6 +28,7 @@ section { background: var(--panel); border: 1px solid var(--line); border-radius
 .title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .pill { display: inline-block; font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; text-transform: none; letter-spacing: 0; vertical-align: middle; background: var(--line); color: var(--text); }
 .pill.live { background: var(--accent); color: #fff; } .pill.turn { background: #d97706; color: #fff; } .pill.sticky { background: #6d4aff; color: #fff; }
+.pill.profile { text-decoration: none; }
 .pill.profile.tight { background: #64748b; } .pill.profile.loose { background: #dc2626; color: #fff; }
 .pill.profile.passive { background: #94a3b8; } .pill.profile.aggressive { background: #ea580c; color: #fff; }
 .pill.profile.calling-station { background: #16a34a; color: #fff; }
@@ -187,3 +188,8 @@ code { font-size: .88em; word-break: break-all; }
   .seats .st-inline { display: block; font-size: .75rem; color: var(--muted); font-weight: 400; }
   .seats th, .seats td { padding: 6px 5px; }
 }
+
+.legend dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 12px; margin: 8px 0; align-items: baseline; }
+.legend dd { margin: 0; }
+.pill.profile.tight, .pill.profile.rock { color: #fff; }
+.profile-stats { width: auto; }

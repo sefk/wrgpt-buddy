@@ -1,0 +1,50 @@
+{% extends "poker/base.html" %}
+{% load poker_extras %}
+{% block title %}{{ profile.player.name }} · WRGPT Buddy{% endblock %}
+{% block content %}
+<section>
+  <h2 class="title">{{ profile.player.name }}
+    {% if profile.classification %}<span class="pill profile {{ profile.classification|slugify }}">{{ profile.classification|capfirst }}</span>{% endif %}
+    <span class="muted small">table {{ profile.table.name }}</span></h2>
+
+  {% if profile.classification %}
+  <p>{{ blurb }}</p>
+  {% elif profile.hands_played < min_hands %}
+  <p>No badge yet: only {{ profile.hands_played }} hand{{ profile.hands_played|pluralize }} seen, and {{ min_hands }} are needed.</p>
+  {% else %}
+  <p>No badge: this player is in the middle on fold rate or aggression, so no style stands out.</p>
+  {% endif %}
+
+  <table class="profile-stats">
+    <tbody>
+      <tr><th>Fold rate</th><td class="num">{% if fold_rate is None %}–{% else %}{% widthratio fold_rate 1 100 %}%{% endif %}</td><td class="muted small">tight at 70% or more, loose under 40%</td></tr>
+      <tr><th>Aggression</th><td class="num">{% if aggr is None %}–{% else %}{% widthratio aggr 1 100 %}%{% endif %}</td><td class="muted small">passive under 30%, aggressive at 50% or more</td></tr>
+      <tr><th>Hands</th><td class="num">{{ profile.hands_played }}</td><td></td></tr>
+      <tr><th>Folds / checks / calls</th><td class="num">{{ profile.folds }} / {{ profile.checks }} / {{ profile.calls }}</td><td></td></tr>
+      <tr><th>Bets / raises / all-ins</th><td class="num">{{ profile.bets }} / {{ profile.raises }} / {{ profile.all_ins }}</td><td></td></tr>
+      <tr><th>Net winnings</th><td class="num"><span class="{% if profile.net_winnings > 0 %}pos{% elif profile.net_winnings < 0 %}neg{% endif %}">{{ profile.net_winnings|signed_money }}</span></td><td></td></tr>
+      <tr><th>Showdowns</th><td class="num">{{ profile.showdowns }}</td><td></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>History</h2>
+  <div class="scroll">
+  <table class="seats">
+    <thead><tr><th>Hand</th><th>Actions</th><th class="num">Net</th></tr></thead>
+    <tbody>
+    {% for h in hands %}
+      <tr>
+        <td><a href="{% url 'poker:hand' profile.table.name h.hand.number %}">#{{ h.hand.number }}</a></td>
+        <td>{{ h.actions }}</td>
+        <td class="num">{% if h.delta is None %}–{% else %}<span class="{% if h.delta > 0 %}pos{% elif h.delta < 0 %}neg{% endif %}">{{ h.delta|signed_money }}</span>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="3" class="muted">No actions recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

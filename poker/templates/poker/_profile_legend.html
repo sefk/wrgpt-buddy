@@ -1,0 +1,10 @@
+<section class="legend">
+  <h2>Player badges</h2>
+  <dl>
+    {% for name, desc in types %}
+    <dt><span class="pill profile {{ name|slugify }}">{{ name|capfirst }}</span></dt>
+    <dd>{{ desc }}</dd>
+    {% endfor %}
+  </dl>
+  <p class="muted small">Fold rate = folds ÷ all actions. Aggression = bets, raises and all-ins ÷ non-fold actions. A badge needs at least {{ min_hands }} hands; a player in the middle on both measures gets none. Click a badge to see why.</p>
+</section>

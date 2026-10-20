@@ -343,13 +343,27 @@ def relink_recommendations() -> int:
 _ACTION_KINDS = {"fold", "check", "call", "bet", "raise", "all_in"}
 
 
+MIN_HANDS_FOR_BADGE = 3
+
+# Badge definitions, in the order the legend shows them. `_classify` decides which applies.
+PROFILE_TYPES = [
+    ("rock", "Folds at least 70% of the time and rarely bets or raises (aggression under 30%). Plays only strong hands, passively."),
+    ("tight", "Folds at least 70% of the time, with middling aggression (30-50%)."),
+    ("aggressive", "Folds at least 70% of the time, but bets or raises at least half the time it does play."),
+    ("loose", "Folds less than 40% of the time, with middling aggression (30-50%). Plays many hands."),
+    ("calling station", "Folds less than 40% of the time and rarely bets or raises (aggression under 30%). Calls a lot."),
+    ("maniac", "Folds less than 40% of the time and bets or raises at least half the time. Plays many hands, hard."),
+]
+PROFILE_BLURBS = dict(PROFILE_TYPES)
+
+
 def _classify(hands_played: int, fold_rate: float, aggr: float) -> str:
     """Classify a player from aggregate stats.
 
     fold_rate = folds / (folds + checks + calls + bets + raises + all_ins)
     aggr = (bets + raises + all_ins) / (checks + calls + bets + raises + all_ins)
     """
-    if hands_played < 3:
+    if hands_played < MIN_HANDS_FOR_BADGE:
         return ""
 
     tight = fold_rate >= 0.70

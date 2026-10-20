@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 from .advice import engine, grading
 from .advice.points import live_point, my_decisions
 from .models import Action, Hand, MyHand, PlayerProfile, Recommendation
+from .state import MIN_HANDS_FOR_BADGE, PROFILE_BLURBS
 
 ROUND_NAMES = {1: "Preflop", 2: "Flop", 3: "Turn", 4: "River"}
 SHOWS_RE = re.compile(r"^\s*(.+?)\s+has:\s*(.+)$")
@@ -413,6 +414,47 @@ def hand_detail(request, table, number):
         ctx["is_current"] = current is not None and current.pk == hand.pk
         ctx["unfinished"] = not ctx["is_current"]
     return render(request, "poker/hand_detail.html", ctx)
+
+
+PROFILE_ACTION_WORDS = {"fold": "fold", "vacation_fold": "fold", "check": "check", "call": "call",
+                        "bet": "bet", "raise": "raise", "all_in": "all-in"}
+
+
+def player_profile(request, table, player):
+    """One player's stats at a table, how the badge was derived, and their hand-by-hand record."""
+    profile = get_object_or_404(
+        PlayerProfile.objects.select_related("table", "player"),
+        table__name=table, player__name=player,
+    )
+    folds, passive_acts = profile.folds, profile.checks + profile.calls
+    aggressive_acts = profile.bets + profile.raises + profile.all_ins
+    acted = folds + passive_acts + aggressive_acts
+    fold_rate = folds / acted if acted else None
+    aggr = aggressive_acts / (passive_acts + aggressive_acts) if passive_acts + aggressive_acts else None
+
+    hands = []
+    seats = {s.hand_id: s for s in profile.player.seats.filter(hand__table=profile.table)}
+    by_hand = OrderedDict()
+    for a in Action.objects.filter(hand__table=profile.table, player=profile.player).exclude(
+        hand__number=0
+    ).select_related("hand"):
+        by_hand.setdefault(a.hand, []).append(a)
+    for hand, acts in sorted(by_hand.items(), key=lambda kv: -kv[0].number):
+        seat = seats.get(hand.id)
+        delta = None
+        if hand.is_over and seat and seat.bankroll_start is not None and seat.bankroll_end is not None:
+            delta = seat.bankroll_end - seat.bankroll_start
+        words = [PROFILE_ACTION_WORDS[a.kind] for a in acts if a.kind in PROFILE_ACTION_WORDS]
+        hands.append({"hand": hand, "actions": ", ".join(words) or "–", "delta": delta})
+
+    return render(request, "poker/player_profile.html", {
+        "profile": profile,
+        "blurb": PROFILE_BLURBS.get(profile.classification, ""),
+        "fold_rate": fold_rate,
+        "aggr": aggr,
+        "min_hands": MIN_HANDS_FOR_BADGE,
+        "hands": hands,
+    })
 
 
 HISTORY_MODELS = ("Sonnet", "Qwen", "gpt-oss", "Qwen Flash")
