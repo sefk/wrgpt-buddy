@@ -94,11 +94,9 @@ class TestBuildProfiles:
 
 
 class TestProfilePages:
-    def test_legend_on_every_page(self, imported, client):
-        r = client.get("/hands/")
-        assert b"Player badges" in r.content
-        assert b"Calling station" in r.content
-        assert b"Folds at least 70%" not in r.content
+    def test_legend_only_on_profile_page(self, imported, client):
+        for url in ("/", "/hands/"):
+            assert b"Player badges" not in client.get(url).content
 
     def test_badge_links_to_profile(self, imported, client):
         from django.urls import reverse
@@ -118,6 +116,7 @@ class TestProfilePages:
         assert r.status_code == 200
         assert b"Fold rate" in r.content
         assert b"History" in r.content
+        assert b"Player badges" in r.content
         assert b"Folds at least 70%" in r.content
 
     def test_unknown_profile_404(self, imported, client):
