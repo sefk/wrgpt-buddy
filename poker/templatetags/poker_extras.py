@@ -96,7 +96,7 @@ def relative(dt):
 
 
 @register.inclusion_tag("poker/_profile_legend.html")
-def profile_legend():
+def profile_legend(descriptions=False):
     from ..state import MIN_HANDS_FOR_BADGE, PROFILE_TYPES
 
-    return {"types": PROFILE_TYPES, "min_hands": MIN_HANDS_FOR_BADGE}
+    return {"types": PROFILE_TYPES, "min_hands": MIN_HANDS_FOR_BADGE, "descriptions": descriptions}

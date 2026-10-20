@@ -98,6 +98,7 @@ class TestProfilePages:
         r = client.get("/hands/")
         assert b"Player badges" in r.content
         assert b"Calling station" in r.content
+        assert b"Folds at least 70%" not in r.content
 
     def test_badge_links_to_profile(self, imported, client):
         from django.urls import reverse
@@ -117,6 +118,7 @@ class TestProfilePages:
         assert r.status_code == 200
         assert b"Fold rate" in r.content
         assert b"History" in r.content
+        assert b"Folds at least 70%" in r.content
 
     def test_unknown_profile_404(self, imported, client):
         assert client.get("/profiles/b17/nobody/").status_code == 404
