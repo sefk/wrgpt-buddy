@@ -3,6 +3,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from django.conf import settings
 from django.core.management import call_command
 
 from poker.advice import engine, grading, local, sonnet
@@ -148,7 +149,7 @@ def test_engine_full_run(my_turn, fakes):
     assert rec.judgement["cache_read_tokens"] == 1234
     assert rec.started_at and rec.finished_at and rec.prompt and rec.snapshot["to_call"] == 400
     # locals ran sequentially in configured order
-    assert [p["model"] for _, p in fakes["post"]] == ["qwen/qwen3.6-35b-a3b", "openai/gpt-oss-20b"]
+    assert [p["model"] for _, p in fakes["post"]] == [m for m, _ in settings.ADVICE_LOCAL_MODELS]
 
     (c1, kw1), (c2, _) = fakes["run"]
     for name in ("--json-schema", "--system-prompt", "--model", "--tools", "--setting-sources"):
@@ -409,6 +410,10 @@ def test_ensure_model_loads_only_when_missing(monkeypatch):
     load = calls[1]
     assert load[1:3] == ["load", "need/it"] and flag(load, "--ttl") == "3600"
     assert flag(load, "--context-length") == "32768"
+    calls.clear()
+    assert local.ensure_model("need/it@4bit") == ""
+    load = calls[1]
+    assert load[2] == "need/it" and flag(load, "--identifier") == "need/it@4bit"
 
 
 def test_run_records_a_failed_load(monkeypatch):

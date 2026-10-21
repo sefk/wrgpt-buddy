@@ -56,7 +56,10 @@ def loaded_models() -> set[str] | None:
 
 def ensure_model(model: str, log=None) -> str:
     """Load `model` explicitly if it isn't loaded (JIT loads right after a reboot
-    have stalled for the whole request timeout). Returns "" or an error message."""
+    have stalled for the whole request timeout). Returns "" or an error message.
+
+    `lms load` rejects variant keys like "qwen/x@4bit" and has no variant flag, so
+    load the base key (its selected variant) under the full name as identifier."""
     import subprocess
 
     if model in (loaded_models() or ()):
@@ -65,7 +68,7 @@ def ensure_model(model: str, log=None) -> str:
         log.warning("%s not loaded; running `lms load`", model)
     try:
         r = subprocess.run(
-            [settings.ADVICE_LMS_BIN, "load", model, "--identifier", model,
+            [settings.ADVICE_LMS_BIN, "load", model.split("@", 1)[0], "--identifier", model,
              "--context-length", str(settings.ADVICE_LOCAL_CONTEXT),
              "--ttl", str(settings.ADVICE_LOCAL_TTL_S), "-y"],
             capture_output=True, text=True, timeout=settings.ADVICE_LOCAL_LOAD_TIMEOUT_S)
