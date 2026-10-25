@@ -206,3 +206,7 @@ code { font-size: .88em; word-break: break-all; }
 #bankroll-chart .event { stroke: #d97706; stroke-dasharray: 4 3; }
 #bankroll-chart text.event { fill: #d97706; font-weight: 600; stroke: none; }
 .chart-tip { min-height: 1.4em; }
+
+.banner { padding: 10px 14px; font-size: .9rem; }
+.banner.err { background: var(--err-bg); color: var(--err-fg); border-bottom: 1px solid var(--line); }
+.banner .muted { display: block; opacity: .8; font-size: .8rem; word-break: break-word; }

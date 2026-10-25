@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from poker import gmail, state
+from poker import gmail, pollstatus, state
 from poker.models import RawEmail
 
 
@@ -45,8 +45,15 @@ class Command(BaseCommand):
         try:
             service = gmail.build_service()
         except gmail.GmailAuthError as exc:
+            pollstatus.record_failure(str(exc), auth=True)
             raise CommandError(str(exc))
-        new, bad = poll(service, opts["query"], log=self.stdout.write)
+        try:
+            new, bad = poll(service, opts["query"], log=self.stdout.write)
+        except Exception as exc:
+            pollstatus.record_failure(f"{type(exc).__name__}: {exc}")
+            raise
         self.stdout.write(f"{new} new, {bad} failed")
         if bad:
+            pollstatus.record_failure(f"{bad} messages failed to ingest")
             raise CommandError(f"{bad} messages failed to ingest")
+        pollstatus.record_ok()

@@ -89,6 +89,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'poker.context_processors.poll_problem',
             ],
         },
     },
@@ -221,3 +222,5 @@ ADVICE_CLAUDE_TIMEOUT_S = int(os.environ.get('ADVICE_CLAUDE_TIMEOUT_S', '300'))
 ADVICE_WORKER_INTERVAL_S = int(os.environ.get('ADVICE_WORKER_INTERVAL_S', '5'))
 # While this file exists the worker starts no new analyses (bin/deploy waits on it).
 ADVICE_PAUSE_FILE = Path(os.environ.get('ADVICE_PAUSE_FILE', BASE_DIR / '.deploy-pause'))
+# Written by poll_gmail after each run; read by the poll-problem banner.
+POLL_STATUS_FILE = Path(os.environ.get('POLL_STATUS_FILE', BASE_DIR / '.poll-status'))

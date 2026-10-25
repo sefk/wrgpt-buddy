@@ -17,6 +17,11 @@
     <a href="{% url 'poker:analytics' %}" {% if nav == 'analytics' %}aria-current="page"{% endif %}>Analytics</a>
   </nav>
 </header>
+{% if poll_problem %}<div class="banner err" role="alert">
+  <strong>New hands aren't arriving.</strong>
+  {% if poll_problem.auth %}Gmail access has expired &mdash; run <code>manage.py gmail_auth</code>.{% else %}Polling Gmail keeps failing.{% endif %}
+  {% if not poll_problem.auth %}<span class="muted">{{ poll_problem.error }}</span>{% endif %}
+</div>{% endif %}
 <main>
 {% block content %}{% endblock %}
 {% block legend %}{% endblock %}
