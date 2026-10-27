@@ -21,13 +21,22 @@ def hand():
 
 def test_backfill_queues_missing_points_once(hand):
     points = [d.point for d in my_decisions(hand)]
-    Recommendation.objects.create(hand=hand, point=points[0], decision_key="x", status=Recommendation.DONE)
+    Recommendation.objects.create(hand=hand, point=points[0], decision_key="x", status=Recommendation.DONE,
+                                   actual={"action": "call"})
     year = (hand.started_at or hand.ended_at).year
     call_command("backfill_analyses", "--year", str(year))
     queued = set(hand.recommendations.filter(decision_key__startswith="backfill-").values_list("point", flat=True))
     assert queued == set(points[1:])
     call_command("backfill_analyses", "--year", str(year))
     assert hand.recommendations.filter(decision_key__startswith="backfill-").count() == len(points) - 1
+
+
+def test_backfill_requeues_done_without_actual(hand):
+    point = my_decisions(hand)[0].point
+    Recommendation.objects.create(hand=hand, point=point, decision_key="seq1", status=Recommendation.DONE)
+    year = (hand.started_at or hand.ended_at).year
+    call_command("backfill_analyses", "--year", str(year))
+    assert hand.recommendations.filter(decision_key__startswith="backfill-", point=point).exists()
 
 
 def test_backfill_skips_other_years(hand):

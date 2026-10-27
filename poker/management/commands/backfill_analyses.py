@@ -23,8 +23,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, year, table, dry_run, redo, **opts):
         live_statuses = (Recommendation.PENDING, Recommendation.RUNNING)
-        if not redo:
-            live_statuses += (Recommendation.DONE,)
         queued = 0
         ts = timezone.now().strftime("%Y%m%d%H%M%S%f")  # keys stay unique if errored ones are retried
         hands = Hand.objects.select_related("table").order_by("table__name", "number")
@@ -35,6 +33,10 @@ class Command(BaseCommand):
             if not hand.is_over or when is None or when.year != year:
                 continue
             have = set(hand.recommendations.filter(status__in=live_statuses).values_list("point", flat=True))
+            if not redo:
+                # Analyses made live carry no actual move, so they can't be graded; redo those too.
+                done = hand.recommendations.filter(status=Recommendation.DONE).exclude(actual={})
+                have |= set(done.values_list("point", flat=True))
             for d in my_decisions(hand):
                 if d.point in have:
                     continue
