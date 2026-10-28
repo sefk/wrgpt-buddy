@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from .advice.points import settle_actuals
 from .models import Action, Hand, MyHand, Player, PlayerProfile, RawEmail, Seat, Table
 from .parsing.types import (
     AdvanceAck,
@@ -119,6 +120,7 @@ def _apply_broadcast(raw: RawEmail, b: Broadcast) -> None:
     if hand.sequences and b.sequence == hand.sequences[0] and b.seats:
         _apply_start_bankrolls(hand, b)
     hand.save()
+    settle_actuals(hand)
     _clear_consumed_advance(raw, hand, b)
 
 

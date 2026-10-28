@@ -74,3 +74,18 @@ def test_backfill_redo_requeues_done_points_but_not_queued_ones(hand):
     call_command("backfill_analyses", "--year", year, "--redo")
     queued = list(hand.recommendations.filter(decision_key__startswith="backfill-").values_list("point", flat=True))
     assert queued == [points[0]]
+
+
+def test_settle_actuals_fills_live_analysis(hand):
+    from poker.advice.points import settle_actuals
+
+    d = my_decisions(hand)[0]
+    son = {"label": "Sonnet", "action": d.action.kind, "amount": None, "error": ""}
+    rec = Recommendation.objects.create(
+        hand=hand, point=d.point, decision_key="seq1", status=Recommendation.DONE, opinions=[son]
+    )
+    assert settle_actuals(hand) == 1
+    rec.refresh_from_db()
+    assert rec.actual["action"] == d.action.kind
+    assert rec.actual_grade == "agree"
+    assert settle_actuals(hand) == 0

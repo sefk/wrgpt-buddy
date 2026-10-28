@@ -73,3 +73,34 @@ def actual_move(dp: DecisionPoint) -> dict:
     elif a.kind == "raise":
         amount = a.total
     return {"action": a.kind, "amount": amount, "text": a.text}
+
+
+def settle_actuals(hand: Hand, me: str | None = None) -> int:
+    """Record my real move on finished analyses made while the decision was still live.
+
+    Those carry actual={} (run() only knows the move for past points); once I have acted the
+    move is in the action log, so fill in `actual` and its grade against Sonnet. The judge's
+    `on_actual` comment needs another Sonnet turn and is left to a re-run. Returns the count.
+    """
+    from . import grading
+    from ..models import Recommendation
+
+    pending = list(
+        hand.recommendations.filter(status=Recommendation.DONE, actual={}).exclude(point="")
+    )
+    if not pending:
+        return 0
+    moves = {d.point: actual_move(d) for d in my_decisions(hand, me)}
+    n = 0
+    for rec in pending:
+        actual = moves.get(rec.point)
+        if not actual:
+            continue
+        rec.actual = actual
+        son = next((o for o in rec.opinions or [] if o.get("label") == "Sonnet"), None)
+        if son:
+            snap = rec.snapshot or {}
+            rec.actual_grade = grading.grade(actual, son, snap.get("to_call"), snap.get("my_stack"))
+        rec.save(update_fields=["actual", "actual_grade"])
+        n += 1
+    return n
