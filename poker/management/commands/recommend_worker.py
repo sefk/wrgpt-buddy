@@ -34,6 +34,8 @@ class Command(BaseCommand):
                 # Between every run, so a new turn of mine jumps a long backfill queue.
                 for rec in engine.due_decisions():
                     log.info("due: %s", rec)
+                for rec in engine.missed_decisions():
+                    log.info("missed: %s", rec)
                 rec = engine.queue().first()
                 if rec is None:
                     break

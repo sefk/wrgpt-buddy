@@ -208,6 +208,32 @@ def due_decisions() -> list[Recommendation]:
     return created
 
 
+MISSED_WINDOW = timedelta(days=2)  # older hands are backfilled on purpose, not automatically
+
+
+def missed_decisions() -> list[Recommendation]:
+    """Queue analyses for recent decisions I made that never got one.
+
+    That happens when an action fires for me (a sticky pending action, say) in the same
+    broadcast that hands me the turn, so the turn is never seen as live. Once the move is
+    in the log it is analyzed as a past decision. Any existing row for the point, even an
+    errored one, counts, so this never re-queues. Returns the new rows.
+    """
+    created = []
+    since = timezone.now() - MISSED_WINDOW
+    hands = Hand.objects.dealt().filter(Q(is_over=False) | Q(ended_at__gte=since)).select_related("table")
+    for hand in hands:
+        have = set(hand.recommendations.values_list("point", flat=True))
+        for d in my_decisions(hand):
+            if d.point in have:
+                continue
+            created.append(Recommendation.objects.create(
+                hand=hand, point=d.point, decision_key=past_decision_key(d.point),
+                status=Recommendation.PENDING,
+            ))
+    return created
+
+
 def reset_stale(everything: bool = False) -> int:
     """Put RUNNING rows back to PENDING: those older than STALE_AFTER, or all of them
     (at worker startup: the worker is the only long-lived runner, so a RUNNING row then

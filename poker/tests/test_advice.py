@@ -245,6 +245,27 @@ def test_due_skips_when_requested_row_exists(my_turn):
     assert engine.due_decisions() == []
 
 
+def test_missed_decisions_queues_unanalyzed_moves(my_turn):
+    from poker.advice.points import my_decisions
+    points = [d.point for d in my_decisions(my_turn)]
+    assert points
+    # a live analysis for the first point already exists; the rest were never seen
+    Recommendation.objects.create(hand=my_turn, point=points[0], decision_key="seq1", status="error")
+    made = engine.missed_decisions()
+    assert sorted(r.point for r in made) == sorted(points[1:])
+    assert all(r.status == "pending" and not r.requested for r in made)
+    assert engine.missed_decisions() == []  # idempotent
+
+
+def test_missed_decisions_ignores_old_finished_hands(my_turn):
+    from datetime import timedelta
+    from django.utils import timezone
+    my_turn.is_over = True
+    my_turn.ended_at = timezone.now() - timedelta(days=30)
+    my_turn.save()
+    assert engine.missed_decisions() == []
+
+
 def test_local_reasoning_content_fallback(monkeypatch):
     monkeypatch.setattr(local, "_post", lambda *a: {"choices": [{"message": {
         "content": "", "reasoning_content": '{"action":"fold","amount":null,"command":"$0","reasoning":"r"}'}}]})
@@ -275,7 +296,7 @@ def test_recommend_command_and_worker(my_turn, fakes, capsys):
     assert len(fakes["run"]) == 2 * n
     Recommendation.objects.all().delete()
     call_command("recommend_worker", "--once")
-    rec = Recommendation.objects.get()
+    rec = Recommendation.objects.get(decision_key__startswith="seq")
     assert rec.status == "done" and not rec.requested
 
 
@@ -487,6 +508,7 @@ def test_worker_startup_resets_every_running_row(my_turn, monkeypatch):
                                         started_at=timezone.now())
     ran = []
     monkeypatch.setattr(engine, "due_decisions", lambda: [])
+    monkeypatch.setattr(engine, "missed_decisions", lambda: [])
     monkeypatch.setattr(engine, "run", lambda r: ran.append(r.pk) or Recommendation.objects.filter(
         pk=r.pk).update(status="done"))
     Command().handle(once=True)
