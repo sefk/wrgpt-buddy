@@ -76,8 +76,8 @@
     <tbody>
     {% for r in rows %}
       <tr class="{% if r.is_me %}me{% endif %} {% if r.status == 'folded' %}folded{% endif %}">
-        <td>{{ r.seat.seat_number }}{% if r.seat.is_dealer %} <span class="dealer" title="Dealer button">D</span>{% endif %}</td>
-        <td>{% if r.to_act %}<span class="act" title="Next to act">&#9654;</span> {% endif %}{{ r.name }}{% if r.profile and r.profile.classification %}<span class="seat-tag"><a class="pill profile {{ r.profile.classification|slugify }}" href="{% url 'poker:player_profile' hand.table.name r.name %}" title="{{ r.profile.classification|capfirst }}: click for why">{{ r.profile.classification|capfirst }}</a></span>{% endif %}{% if r.status %}<span class="st-inline">{{ r.status }}</span>{% endif %}</td>
+        <td>{{ r.seat.seat_number }}{% if r.seat.is_dealer %} <span class="dealer" title="Dealer button">D</span>{% endif %}{% if r.to_act %} <span class="act" title="Next to act">&#9654;</span>{% endif %}</td>
+        <td>{{ r.name }}{% if r.profile and r.profile.classification %}<span class="seat-tag"><a class="pill profile {{ r.profile.classification|slugify }}" href="{% url 'poker:player_profile' hand.table.name r.name %}" title="{{ r.profile.classification|capfirst }}: click for why">{{ r.profile.classification|capfirst }}</a></span>{% endif %}{% if r.status %}<span class="st-inline">{{ r.status }}</span>{% endif %}</td>
         <td class="num">{{ r.seat.bankroll_start|money }}</td>
         <td class="num">{% if hand.is_over %}<span class="{% if r.delta > 0 %}pos{% elif r.delta < 0 %}neg{% endif %}">{{ r.delta|signed_money }}</span>{% elif r.chips %}{{ r.chips|money }}{% else %}–{% endif %}</td>
         <td class="c-status">{{ r.status }}</td>
