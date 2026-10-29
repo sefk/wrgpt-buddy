@@ -37,16 +37,20 @@ class TestClassify:
         """Tight + neutral = tight."""
         assert _classify(10, 0.71, 0.40) == "tight"
 
+    def test_balanced(self):
+        """Middling fold rate = balanced."""
+        assert _classify(10, 0.55, 0.20) == "balanced"
+
     def test_no_actions(self):
         """No actions yields neutral classification."""
-        assert _classify(5, 0.5, 0.5) == ""  # hands_played < 3
+        assert _classify(2, 0.5, 0.5) == ""  # hands_played < 3
 
     def test_edge_fold_rate_tight(self):
         assert _classify(10, 0.70, 0.29) == "rock"  # tight + passive (aggr < 0.30)
-        assert _classify(10, 0.69, 0.30) == ""  # below threshold, neutral
+        assert _classify(10, 0.69, 0.30) == "balanced"  # below threshold, neutral
 
     def test_edge_fold_rate_loose(self):
-        assert _classify(10, 0.40, 0.50) == ""  # exactly 0.40 is not loose
+        assert _classify(10, 0.40, 0.50) == "balanced"  # exactly 0.40 is not loose
         assert _classify(10, 0.39, 0.50) == "maniac"  # loose + aggressive = maniac
         assert _classify(10, 0.39, 0.40) == "loose"  # loose + neutral
 

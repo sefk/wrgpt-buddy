@@ -355,6 +355,7 @@ PROFILE_TYPES = [
     ("loose", "Folds less than 40% of the time, with middling aggression (30-50%). Plays many hands."),
     ("calling station", "Folds less than 40% of the time and rarely bets or raises (aggression under 30%). Calls a lot."),
     ("maniac", "Folds less than 40% of the time and bets or raises at least half the time. Plays many hands, hard."),
+    ("balanced", "Folds between 40% and 70% of the time, with no extreme in how often they bet or raise. Nothing stands out yet."),
 ]
 PROFILE_BLURBS = dict(PROFILE_TYPES)
 
@@ -385,7 +386,7 @@ def _classify(hands_played: int, fold_rate: float, aggr: float) -> str:
         return "loose"
     if tight:
         return "tight"
-    return ""
+    return "balanced"
 
 
 def build_profiles(table_name: str) -> int:
