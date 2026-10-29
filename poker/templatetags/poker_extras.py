@@ -100,3 +100,17 @@ def profile_legend():
     from ..state import MIN_HANDS_FOR_BADGE, PROFILE_TYPES
 
     return {"types": PROFILE_TYPES, "min_hands": MIN_HANDS_FOR_BADGE}
+
+
+@register.filter
+def badge_abbr(name):
+    from ..state import PROFILE_ABBREVS
+
+    return PROFILE_ABBREVS.get(name) or name.capitalize()
+
+
+@register.inclusion_tag("poker/_seat_legend.html")
+def seat_legend():
+    from ..state import PROFILE_TYPES
+
+    return {"types": [name for name, _ in PROFILE_TYPES]}

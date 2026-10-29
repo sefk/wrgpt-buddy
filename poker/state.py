@@ -358,6 +358,7 @@ PROFILE_TYPES = [
     ("balanced", "Folds between 40% and 70% of the time, with no extreme in how often they bet or raise. Nothing stands out yet."),
 ]
 PROFILE_BLURBS = dict(PROFILE_TYPES)
+PROFILE_ABBREVS = {"calling station": "CS"}  # for tight spots like the seats table
 
 
 def _classify(hands_played: int, fold_rate: float, aggr: float) -> str:

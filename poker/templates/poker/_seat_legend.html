@@ -1,0 +1,4 @@
+{% load poker_extras %}
+<p class="seat-legend small muted">
+  {% for name in types %}<span><span class="pill profile {{ name|slugify }}">{{ name|badge_abbr }}</span> {{ name|capfirst }}</span>{% endfor %}
+</p>
