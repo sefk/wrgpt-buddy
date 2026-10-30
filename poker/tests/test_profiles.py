@@ -21,13 +21,13 @@ class TestClassify:
         """Loose + aggressive = maniac."""
         assert _classify(10, 0.30, 0.60) == "maniac"
 
-    def test_calling_station(self):
-        """Loose + passive = calling station."""
-        assert _classify(10, 0.35, 0.25) == "calling station"
+    def test_caller(self):
+        """Loose + passive = caller."""
+        assert _classify(10, 0.35, 0.25) == "caller"
 
-    def test_aggressive(self):
-        """Tight + aggressive = aggressive."""
-        assert _classify(10, 0.72, 0.55) == "aggressive"
+    def test_agro(self):
+        """Tight + aggressive = agro."""
+        assert _classify(10, 0.72, 0.55) == "agro"
 
     def test_loose(self):
         """Loose + neutral = loose."""
@@ -91,8 +91,8 @@ class TestBuildProfiles:
 
         build_profiles("b17")
 
-        valid = {"", "tight", "loose", "passive", "aggressive",
-                 "calling station", "rock", "maniac"}
+        valid = {"", "tight", "loose", "passive", "agro",
+                 "caller", "rock", "maniac"}
         for p in PlayerProfile.objects.filter(table__name="b17"):
             assert p.classification in valid, f"{p.player.name}: {p.classification}"
 

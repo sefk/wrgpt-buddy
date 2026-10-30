@@ -351,14 +351,13 @@ MIN_HANDS_FOR_BADGE = 3
 PROFILE_TYPES = [
     ("rock", "Folds at least 70% of the time and rarely bets or raises (aggression under 30%). Plays only strong hands, passively."),
     ("tight", "Folds at least 70% of the time, with middling aggression (30-50%)."),
-    ("aggressive", "Folds at least 70% of the time, but bets or raises at least half the time it does play."),
+    ("agro", "Folds at least 70% of the time, but bets or raises at least half the time it does play."),
     ("loose", "Folds less than 40% of the time, with middling aggression (30-50%). Plays many hands."),
-    ("calling station", "Folds less than 40% of the time and rarely bets or raises (aggression under 30%). Calls a lot."),
+    ("caller", "Folds less than 40% of the time and rarely bets or raises (aggression under 30%). Calls a lot."),
     ("maniac", "Folds less than 40% of the time and bets or raises at least half the time. Plays many hands, hard."),
     ("balanced", "Folds between 40% and 70% of the time, with no extreme in how often they bet or raise. Nothing stands out yet."),
 ]
 PROFILE_BLURBS = dict(PROFILE_TYPES)
-PROFILE_ABBREVS = {"calling station": "CS"}  # for tight spots like the seats table
 
 
 def _classify(hands_played: int, fold_rate: float, aggr: float) -> str:
@@ -380,9 +379,9 @@ def _classify(hands_played: int, fold_rate: float, aggr: float) -> str:
     if loose and aggressive:
         return "maniac"
     if loose and passive:
-        return "calling station"
+        return "caller"
     if tight and aggressive:
-        return "aggressive"
+        return "agro"
     if loose:
         return "loose"
     if tight:

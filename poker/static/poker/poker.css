@@ -30,8 +30,8 @@ section { background: var(--panel); border: 1px solid var(--line); border-radius
 .pill.live { background: var(--accent); color: #fff; } .pill.turn { background: #d97706; color: #fff; } .pill.sticky { background: #6d4aff; color: #fff; }
 .pill.profile { text-decoration: none; }
 .pill.profile.tight { background: #64748b; } .pill.profile.loose { background: #dc2626; color: #fff; }
-.pill.profile.passive { background: #94a3b8; } .pill.profile.aggressive { background: #ea580c; color: #fff; }
-.pill.profile.calling-station { background: #16a34a; color: #fff; }
+.pill.profile.passive { background: #94a3b8; } .pill.profile.agro { background: #ea580c; color: #fff; }
+.pill.profile.caller { background: #16a34a; color: #fff; }
 .pill.profile.balanced { background: #a8a29e; color: #fff; }
 .pill.profile.rock { background: #475569; color: #fff; } .pill.profile.maniac { background: #dc2626; color: #fff; }
 .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px 16px; margin: 8px 0; }
@@ -168,8 +168,6 @@ code { font-size: .88em; word-break: break-all; }
 /* Responsive: wide screens get more room and a two-column hand page */
 .st-inline { display: none; }
 .seats th, .seats td { padding: 6px 8px; }
-.seat-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 10px 0 0; }
-.seat-legend .pill { font-size: .68rem; padding: 0 7px; }
 @media (min-width: 1100px) {
   main { max-width: 1240px; }
   .detail-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 0 16px; align-items: start; }
