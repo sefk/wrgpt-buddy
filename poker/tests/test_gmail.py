@@ -93,3 +93,23 @@ def test_poll_stops_after_consecutive_failures_and_resumes():
     svc.fail.clear()
     new, bad = poll(svc, "q")
     assert (new, bad) == (len(files) - 5, 0)
+
+
+class _Creds:
+    def to_json(self):
+        return '{"token": "t"}'
+
+
+def test_token_age_survives_refresh(settings, tmp_path):
+    import json
+    import time
+
+    from poker import gmail
+
+    settings.GMAIL_TOKEN_FILE = tmp_path / "secrets" / "token.json"
+    assert gmail.token_age() == "token age unknown"
+    gmail._save(_Creds(), issued_at=time.time() - 3 * 86400)  # fresh consent
+    assert gmail.token_age() == "token issued 3.0 days ago"
+    gmail._save(_Creds())  # a refresh rewrites the file but keeps the stamp
+    assert json.loads(settings.GMAIL_TOKEN_FILE.read_text())["token"] == "t"
+    assert gmail.token_age() == "token issued 3.0 days ago"

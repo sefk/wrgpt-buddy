@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import json
 import os
 import time
 from collections.abc import Iterator
@@ -12,6 +13,17 @@ from django.conf import settings
 
 class GmailAuthError(RuntimeError):
     pass
+
+
+def token_age() -> str:
+    """How long ago the current refresh token was issued, for failure messages."""
+    try:
+        issued = json.loads(settings.GMAIL_TOKEN_FILE.read_text()).get("issued_at")
+    except (OSError, ValueError):
+        return "token age unknown"
+    if not issued:
+        return "token age unknown"
+    return f"token issued {(time.time() - issued) / 86400:.1f} days ago"
 
 
 def load_credentials(interactive: bool = False):
@@ -34,7 +46,7 @@ def load_credentials(interactive: bool = False):
             return creds
         except RefreshError as exc:
             if not interactive:
-                raise GmailAuthError(f"token refresh failed ({exc}); run: manage.py gmail_auth")
+                raise GmailAuthError(f"token refresh failed ({exc}; {token_age()}); run: manage.py gmail_auth")
     if not interactive:
         raise GmailAuthError("no usable Gmail token; run: manage.py gmail_auth")
 
@@ -42,14 +54,23 @@ def load_credentials(interactive: bool = False):
 
     flow = InstalledAppFlow.from_client_secrets_file(str(settings.GMAIL_CLIENT_FILE), scopes)
     creds = flow.run_local_server(port=0, open_browser=True)
-    _save(creds)
+    _save(creds, issued_at=time.time())
     return creds
 
 
-def _save(creds) -> None:
+def _save(creds, issued_at: float | None = None) -> None:
+    """Write the token. `issued_at` stamps a fresh consent; a plain refresh keeps the old stamp."""
     path = settings.GMAIL_TOKEN_FILE
     path.parent.mkdir(mode=0o700, exist_ok=True)
-    path.write_text(creds.to_json())
+    data = json.loads(creds.to_json())
+    if issued_at is None:
+        try:
+            issued_at = json.loads(path.read_text()).get("issued_at")
+        except (OSError, ValueError):
+            pass
+    if issued_at:
+        data["issued_at"] = issued_at
+    path.write_text(json.dumps(data))
     os.chmod(path, 0o600)
 
 
