@@ -166,8 +166,11 @@ code { font-size: .88em; word-break: break-all; }
 @media (prefers-reduced-motion: reduce) { .progress .st-running .st-icon::before { animation: none; } }
 
 /* Responsive: wide screens get more room and a two-column hand page */
-.st-inline { display: none; }
-.seats th, .seats td { padding: 6px 8px; }
+.st-inline { display: block; font-size: .75rem; color: var(--muted); font-weight: 400; }
+.seats th, .seats td { padding: 6px 5px; }
+.seats .pill { font-size: .65rem; padding: 0 6px; margin-left: 2px; }
+.seats td .cards { gap: 2px; }
+.seats td .card { width: 1.5rem; }
 @media (min-width: 1100px) {
   main { max-width: 1240px; }
   .detail-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 0 16px; align-items: start; }
@@ -187,8 +190,6 @@ code { font-size: .88em; word-break: break-all; }
   .hist .c-net { grid-area: net; } .hist .c-rec { grid-area: rec; }
   .hist .c-date { grid-area: date; font-size: .8rem; color: var(--muted); }
   .hist .c-winner { grid-area: winner; font-size: .8rem; color: var(--muted); min-width: 0; }
-  .seats .c-status { display: none; }
-  .seats .st-inline { display: block; font-size: .75rem; color: var(--muted); font-weight: 400; }
   .seats th, .seats td { padding: 6px 5px; }
 }
 
