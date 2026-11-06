@@ -66,6 +66,9 @@ def my_turn():
 @pytest.fixture
 def fakes(monkeypatch, tmp_path, settings):
     settings.ADVICE_CLAUDE_CWD = tmp_path / "cwd"
+    # Two local models, though production runs one, so ordering and grading across
+    # several locals stay covered.
+    settings.ADVICE_LOCAL_MODELS = [("qwen/qwen3.6-35b-a3b", "Qwen"), ("openai/gpt-oss-20b", "gpt-oss")]
     calls = {"post": [], "run": []}
 
     def fake_post(url, payload, timeout):
@@ -90,7 +93,6 @@ def fakes(monkeypatch, tmp_path, settings):
         return subprocess.CompletedProcess(cmd, 0, json.dumps(out), "")
 
     monkeypatch.setattr(local, "_post", fake_post)
-    monkeypatch.setattr(local, "ensure_model", lambda model, log=None: "")
     monkeypatch.setattr(sonnet.subprocess, "run", fake_run)
     return calls
 
@@ -129,6 +131,15 @@ def test_local_uses_json_schema(fakes):
     assert url.endswith("/chat/completions")
     assert payload["response_format"]["type"] == "json_schema"
     assert payload["response_format"]["json_schema"]["strict"] is True
+    assert payload["reasoning_effort"] == "medium"
+
+
+def test_local_budget_spent_thinking_is_a_clear_error(monkeypatch):
+    monkeypatch.setattr(local, "_post", lambda *a: {
+        "choices": [{"message": {"content": "", "reasoning_content": "hmm " * 50},
+                     "finish_reason": "length"}]})
+    o = local.ask("m", "M", "p")
+    assert "whole token budget" in o["error"] and not o["action"]
 
 
 def test_local_strips_think():
@@ -194,7 +205,6 @@ def test_engine_timeout_and_is_error(my_turn, fakes, monkeypatch):
 
 def test_engine_all_fail(my_turn, monkeypatch, settings, tmp_path):
     settings.ADVICE_CLAUDE_CWD = tmp_path
-    monkeypatch.setattr(local, "ensure_model", lambda model, log=None: "")
     monkeypatch.setattr(local, "_post", lambda *a: (_ for _ in ()).throw(OSError("down")))
     monkeypatch.setattr(sonnet.subprocess, "run",
                         lambda cmd, **kw: subprocess.CompletedProcess(cmd, 2, "", "x"))
@@ -393,94 +403,6 @@ def test_auth_error_is_explained_and_fails_the_recommendation():
     assert sonnet.is_auth_error(msg)
     assert "claude setup-token" in msg
     assert not sonnet.is_auth_error(sonnet._explain("rate limited"))
-
-
-def test_ensure_server_starts_lm_studio_when_down(monkeypatch):
-    from poker.advice import local
-
-    calls = []
-    state = {"up": False}
-    monkeypatch.setattr(local, "server_up", lambda: state["up"])
-
-    def fake_run(cmd, **kw):
-        calls.append(cmd)
-        state["up"] = True
-
-    monkeypatch.setattr("subprocess.run", fake_run)
-    assert local.ensure_server() is True
-    assert calls and calls[0][1:] == ["server", "start"]
-    calls.clear()
-    assert local.ensure_server() is True and calls == []  # already up: no-op
-
-
-def test_ensure_model_loads_only_when_missing(monkeypatch):
-    from poker.advice import local
-
-    calls = []
-
-    def fake_run(cmd, **kw):
-        calls.append(cmd)
-        out = json.dumps([{"identifier": "have/it"}]) if cmd[1] == "ps" else ""
-        return subprocess.CompletedProcess(cmd, 0, out, "")
-
-    monkeypatch.setattr("subprocess.run", fake_run)
-    assert local.ensure_model("have/it") == ""
-    assert [c[1] for c in calls] == ["ps"]
-    calls.clear()
-    assert local.ensure_model("need/it") == ""
-    load = calls[1]
-    assert load[1:3] == ["load", "need/it"] and flag(load, "--ttl") == "3600"
-    assert flag(load, "--context-length") == "32768"
-    calls.clear()
-    assert local.ensure_model("need/it@4bit") == ""
-    load = calls[1]
-    assert load[2] == "need/it" and flag(load, "--identifier") == "need/it@4bit"
-
-
-def test_run_records_a_failed_load(monkeypatch):
-    from poker.advice import local
-
-    monkeypatch.setattr(local, "ensure_model", lambda model, log=None: "lms load m failed: boom")
-    monkeypatch.setattr(local, "_post", lambda *a: pytest.fail("must not ask"))
-    o = local.run("m", "M", "p")
-    assert o["error"].endswith("boom") and not o["action"]
-
-
-def test_remote_model_uses_openrouter_and_reports_cost(monkeypatch, settings):
-    settings.OPENROUTER_API_KEY = "sk-or-test"
-    seen = {}
-
-    def fake_post(url, payload, timeout, headers=None):
-        seen.update(url=url, payload=payload, headers=headers)
-        body = {"action": "fold", "amount": None, "command": "fold", "reasoning": "r"}
-        return {"choices": [{"message": {"content": json.dumps(body)}}], "usage": {"cost": 0.0031}}
-
-    monkeypatch.setattr(local, "_post", fake_post)
-    o = local.run_remote("qwen/qwen3.8-flash", "Qwen Flash", "p")
-    assert o["action"] == "fold" and o["cost"] == pytest.approx(0.0031) and not o["error"]
-    assert seen["url"] == "https://openrouter.ai/api/v1/chat/completions"
-    assert seen["headers"] == {"Authorization": "Bearer sk-or-test"}
-    assert seen["payload"]["usage"] == {"include": True}
-
-
-def test_remote_model_without_key_is_an_error(monkeypatch):
-    monkeypatch.setattr(local, "_post", lambda *a, **k: pytest.fail("must not call"))
-    assert "OPENROUTER_API_KEY" in local.run_remote("m", "M", "p")["error"]
-
-
-def test_engine_adds_remote_opinion_and_cost(my_turn, fakes, monkeypatch, settings):
-    settings.OPENROUTER_API_KEY = "sk-or-test"
-    settings.ADVICE_REMOTE_MODELS = [("qwen/qwen3.8-flash", "Qwen Flash")]
-    monkeypatch.setattr(local, "run_remote", lambda m, label, p: {
-        "model": m, "label": label, "action": "call", "amount": None, "command": "call *",
-        "reasoning": "r", "error": "", "seconds": 1.0, "cost": 0.003})
-    rec = Recommendation.objects.create(hand=my_turn, decision_key=engine.decision_key(my_turn))
-    engine.run(rec)
-    rec.refresh_from_db()
-    assert rec.status == "done", rec.error
-    assert [o["label"] for o in rec.opinions] == ["Sonnet", "Qwen", "gpt-oss", "Qwen Flash"]
-    assert float(rec.cost_usd) == pytest.approx(0.103)
-    assert [s["label"] for s in rec.steps][1:3] == ["gpt-oss (local)", "Qwen Flash (OpenRouter)"]
 
 
 def test_run_keeps_a_relink_made_mid_run(my_turn, fakes, monkeypatch):

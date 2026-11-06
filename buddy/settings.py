@@ -189,32 +189,19 @@ GMAIL_TOKEN_FILE = SECRETS_DIR / 'gmail-token.json'
 GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 GMAIL_QUERY = os.environ.get('GMAIL_QUERY', 'label:wrgpt after:2026/09/01')
 
-# Advice (poker/advice): local models via LM Studio + Sonnet via the claude CLI.
-ADVICE_LMSTUDIO_URL = os.environ.get('ADVICE_LMSTUDIO_URL', 'http://localhost:1234/v1')
-ADVICE_LOCAL_MODELS = [
-    ('qwen/qwen3.6-35b-a3b', 'Qwen'),
-    ('openai/gpt-oss-20b', 'gpt-oss'),
-]
+# Advice (poker/advice): Qwen3.8 Flash-Next on the local ds4 server + Sonnet via the
+# claude CLI. ds4 runs as a LaunchDaemon managed from ~/src/bench (bin/deploy-ds4).
+ADVICE_LOCAL_URL = os.environ.get('ADVICE_LOCAL_URL', 'http://localhost:8765/v1')
+ADVICE_LOCAL_MODELS = [('qwen3.8-flash-next', 'Qwen Flash')]
 if os.environ.get('ADVICE_LOCAL_MODELS'):  # "model_id=Label,model_id=Label"
     ADVICE_LOCAL_MODELS = [
         tuple(p.split('=', 1)) for p in _env_list('ADVICE_LOCAL_MODELS') if '=' in p
     ]
-# Models are loaded explicitly (`lms load`) before each ask, so the request timeout
-# only has to cover inference; the load gets its own.
+# Qwen's thinking level (ds4 maps it into the system prompt; "none" turns thinking
+# off). At ds4's default, high, one test hand in five thought through the whole
+# 16k-token budget and never answered; at medium every one answered in 18-37s.
+ADVICE_LOCAL_REASONING_EFFORT = os.environ.get('ADVICE_LOCAL_REASONING_EFFORT', 'medium')
 ADVICE_LOCAL_TIMEOUT_S = int(os.environ.get('ADVICE_LOCAL_TIMEOUT_S', '300'))
-ADVICE_LOCAL_LOAD_TIMEOUT_S = int(os.environ.get('ADVICE_LOCAL_LOAD_TIMEOUT_S', '300'))
-ADVICE_LOCAL_CONTEXT = int(os.environ.get('ADVICE_LOCAL_CONTEXT', '32768'))
-ADVICE_LOCAL_TTL_S = int(os.environ.get('ADVICE_LOCAL_TTL_S', '3600'))
-# Models too big for this machine, served by OpenRouter. Skipped when there is no key.
-OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
-OPENROUTER_URL = os.environ.get('OPENROUTER_URL', 'https://openrouter.ai/api/v1')
-ADVICE_REMOTE_MODELS = [('qwen/qwen3.8-flash', 'Qwen Flash')]
-if os.environ.get('ADVICE_REMOTE_MODELS') is not None:  # "model_id=Label,model_id=Label"; empty disables
-    ADVICE_REMOTE_MODELS = [
-        tuple(p.split('=', 1)) for p in _env_list('ADVICE_REMOTE_MODELS') if '=' in p
-    ]
-ADVICE_REMOTE_TIMEOUT_S = int(os.environ.get('ADVICE_REMOTE_TIMEOUT_S', '180'))
-ADVICE_LMS_BIN = os.environ.get('ADVICE_LMS_BIN', str(Path.home() / '.lmstudio/bin/lms'))
 ADVICE_CLAUDE_BIN = os.environ.get('ADVICE_CLAUDE_BIN', str(Path.home() / '.local/bin/claude'))
 ADVICE_CLAUDE_MODEL = os.environ.get('ADVICE_CLAUDE_MODEL', 'sonnet')
 ADVICE_CLAUDE_CWD = Path(os.environ.get('ADVICE_CLAUDE_CWD', BASE_DIR / '.claude-advice'))

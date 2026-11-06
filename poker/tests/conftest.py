@@ -14,7 +14,7 @@ def imported():
 
 
 @pytest.fixture(autouse=True)
-def _no_real_lm_studio(monkeypatch, settings):
-    """Never probe or start the real LM Studio server, or call OpenRouter, from tests."""
-    settings.OPENROUTER_API_KEY = ""
-    monkeypatch.setattr("poker.advice.local.server_up", lambda: True)
+def _no_real_local_server(settings):
+    """Point the local model at a port nothing listens on, so a test that forgets
+    to stub local.ask fails fast instead of asking the real ds4 server."""
+    settings.ADVICE_LOCAL_URL = "http://127.0.0.1:9/v1"

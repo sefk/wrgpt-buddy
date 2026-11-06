@@ -33,9 +33,9 @@ To start with let's do something passive, only adding the ability to send email 
 ### Recommendations
 Run only on hands where I'm still in the pot. Start the analysis when an email shows it's my turn, and keep the result hidden until I ask for it.
 
-1. **Local models:** ask two models served by LM Studio through its OpenAI-compatible endpoint: qwen3.6 (default `qwen/qwen3.6-35b-a3b`) and `openai/gpt-oss-20b`. Model names are configurable.
-2. **Sonnet:** ask Sonnet the same question. All three run in parallel.
-3. **Judge:** add both local answers as a second turn in the Sonnet conversation, reusing the prompt cache, and ask Sonnet to compare the three. Tell it explicitly that it may side with either local model.
+1. **Local model:** ask Qwen3.8 Flash-Next on the local ds4 server through its OpenAI-compatible endpoint (default `qwen3.8-flash-next`, medium thinking). Model names are configurable, and more than one local model is supported. (Until 2026-11-06: qwen3.6 and gpt-oss-20b in LM Studio, plus Qwen3.8 Flash on OpenRouter.)
+2. **Sonnet:** ask Sonnet the same question, after the local model.
+3. **Judge:** add the local answers as a second turn in the Sonnet conversation, reusing the prompt cache, and ask Sonnet to compare them. Tell it explicitly that it may side with a local model.
 
 All models return structured output: action, amount and reasoning. Concurrence is graded for each local model against Sonnet:
 - **Agree:** same action and similar size.

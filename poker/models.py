@@ -162,13 +162,13 @@ class Recommendation(models.Model):
     """Advice for one decision point: local models + Sonnet, then a Sonnet judge turn.
 
     `opinions` is a list of dicts, one per model, in display order:
-        {"model": "qwen/qwen3.6-35b-a3b", "label": "Qwen", "action": "call",
+        {"model": "qwen3.8-flash-next", "label": "Qwen Flash", "action": "call",
          "amount": 600, "reasoning": "...", "error": "", "seconds": 41.2,
          "grade": "agree" | "same_action_different_size" | "different_action" | ""}
     `grade` compares each local model with Sonnet (computed in code; Sonnet's own is "").
     `judgement` is Sonnet's second turn:
-        {"verdicts": [{"model": "Qwen", "concurrence": "...", "evaluation": "..."}],
-         "preferred": "Sonnet" | "Qwen" | "gpt-oss", "summary": "...",
+        {"verdicts": [{"model": "Qwen Flash", "concurrence": "...", "evaluation": "..."}],
+         "preferred": "Sonnet" | "Qwen Flash" | ..., "summary": "...",
          "on_actual": "comment on what I actually did (past points only, else empty)"}
     """
 

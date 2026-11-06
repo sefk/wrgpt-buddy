@@ -79,21 +79,26 @@ configurable via `WRGPT_TAILNET_HOST` / `WRGPT_TAILNET_PORT` (used for
 
 ## Recommendations
 
-For each decision point where it is your turn, the app asks three models what to
-do: two local models served by LM Studio (Qwen and gpt-oss) and Sonnet through
-the `claude` CLI, all in parallel. A judge turn then continues the Sonnet
-conversation, reusing its prompt cache, with both local answers added, and
-compares the three. Each local model is graded against Sonnet: agree, same
-action with a different size, or different action. Model names and settings are
-in `buddy/settings.py` (`ADVICE_*`). Before each local call the app checks
-`lms ps` and runs `lms load` (32k context, 1h TTL) if the model isn't loaded,
-because JIT loads right after a reboot have stalled. The request timeout then
-covers inference only (`ADVICE_LOCAL_TIMEOUT_S`, 300s).
+For each decision point where it is your turn, the app asks two models what to
+do: Qwen3.8 Flash-Next ("Qwen Flash") on the local [ds4] server, then Sonnet
+through the `claude` CLI. A judge turn then continues the Sonnet conversation,
+reusing its prompt cache, with the local answer added, and compares the two. The
+local model is graded against Sonnet: agree, same action with a different size,
+or different action. Model names and settings are in `buddy/settings.py`
+(`ADVICE_*`).
 
-A fourth model, Qwen Flash (`qwen/qwen3.8-flash`), runs on OpenRouter, about
-$0.003 per decision, and is counted in the recommendation's cost. Set
-`OPENROUTER_API_KEY` in `.env` to enable it; without a key it is skipped. Change
-the model with `ADVICE_REMOTE_MODELS` (`model_id=Label`; empty disables it).
+ds4 runs as a LaunchDaemon managed from `~/src/bench` (`bin/deploy-ds4`,
+`bin/ds4ctl`) on port 8765 with the model always loaded, so nothing is started
+or loaded from here. The request asks for medium thinking
+(`ADVICE_LOCAL_REASONING_EFFORT`): at ds4's default, high, one test hand in five
+thought through the whole 16k-token budget and never answered, while medium
+answered every one in 18 to 37 seconds. The request timeout is
+`ADVICE_LOCAL_TIMEOUT_S` (300s). If ds4 is down the local step records the error
+and Sonnet's answer stands alone.
+
+Until 2026-11-06 the local models were Qwen3.6-35B-A3B and gpt-oss-20b in LM
+Studio, plus Qwen3.8 Flash on OpenRouter. Their past opinions keep their labels,
+so the hand list's history grid still has Qwen and gpt-oss columns.
 
 The analysis runs automatically but stays hidden. The hand page shows only
 "Ready" until you press Show recommendation. You can also press Request
@@ -125,4 +130,5 @@ tournament starts when a table change doesn't carry the bankroll over (see
 - Database: `db.sqlite3`
 - Config reference: `.env.example`
 
+[ds4]: https://github.com/antirez/ds4
 [gcp]: https://console.cloud.google.com/apis/credentials
