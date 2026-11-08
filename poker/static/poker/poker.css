@@ -2,14 +2,14 @@
   --bg: #f6f5f1; --panel: #fff; --text: #1d1f23; --muted: #6b7078; --line: #e2e0d9;
   --accent: #1f6f50; --warn-bg: #fff4d6; --warn-fg: #6b4b00; --err-bg: #fde4e1; --err-fg: #8a1c12;
   --card-bg: #fff; --card-line: #c9c6bc; --pos: #1b7a3d; --neg: #b3261e; --me: #e6f2ec;
-  --spade: #1d1f23; --club: #1b7a3d; --heart: #c62828; --diamond: #1565c0;
+  --spade: #1d1f23; --club: #1b7a3d; --heart: #c62828; --diamond: #1565c0; --field: #1565c0;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #14161a; --panel: #1d2026; --text: #e6e7ea; --muted: #9aa0a8; --line: #2c3038;
     --accent: #4fc08d; --warn-bg: #3a2f10; --warn-fg: #f2d38a; --err-bg: #43191a; --err-fg: #ffb4ab;
     --card-bg: #e9e8e3; --card-line: #555; --pos: #5fd388; --neg: #ff8a80; --me: #1f3329;
-    --spade: #1d1f23; --club: #1b7a3d; --heart: #c62828; --diamond: #1565c0;
+    --spade: #1d1f23; --club: #1b7a3d; --heart: #c62828; --diamond: #1565c0; --field: #6aa9f0;
   }
 }
 * { box-sizing: border-box; }
@@ -208,7 +208,25 @@ code { font-size: .88em; word-break: break-all; }
 #bankroll-chart .dot { fill: var(--accent); }
 #bankroll-chart .event { stroke: #d97706; stroke-dasharray: 4 3; }
 #bankroll-chart text.event { fill: #d97706; font-weight: 600; stroke: none; }
+#bankroll-chart .band { fill: var(--field); opacity: .14; stroke: none; }
+#bankroll-chart .mean { fill: none; stroke: var(--field); stroke-width: 1.5; stroke-dasharray: 6 4; }
+#bankroll-chart .median { fill: none; stroke: var(--field); stroke-width: 1; opacity: .55; }
 .chart-tip { min-height: 1.4em; }
+.chart-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 6px 0 0; color: var(--muted); }
+.chart-legend .key { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--accent); margin-left: 10px; vertical-align: middle; }
+.chart-legend .key:first-child { margin-left: 0; }
+.chart-legend .key.mean { border-top: 2px dashed var(--field); }
+.chart-legend .key.median { border-top: 1px solid var(--field); opacity: .55; }
+.chart-legend .key.band { height: 10px; border: 0; background: var(--field); opacity: .2; }
+#ranking-chart { width: 100%; height: auto; display: block; }
+#ranking-chart text { fill: var(--text); font-size: 12px; }
+#ranking-chart text.val { fill: var(--muted); font-size: 11px; }
+#ranking-chart .bar { fill: var(--muted); opacity: .45; }
+#ranking-chart .bar.me { fill: var(--accent); opacity: 1; }
+#ranking-chart text.me { fill: var(--accent); font-weight: 700; }
+#ranking-chart .row.out text { fill: var(--muted); text-decoration: line-through; }
+#ranking-chart .avg { stroke: var(--field); stroke-dasharray: 6 4; }
+#ranking-chart text.avg { fill: var(--field); stroke: none; font-size: 11px; }
 
 .banner { padding: 10px 14px; font-size: .9rem; }
 .banner.err { background: var(--err-bg); color: var(--err-fg); border-bottom: 1px solid var(--line); }

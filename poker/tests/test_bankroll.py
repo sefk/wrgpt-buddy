@@ -62,3 +62,24 @@ def test_pages(tournaments, client, settings):
 
 def test_analytics_empty(client):
     assert client.get(reverse("poker:analytics")).status_code == 200
+
+
+def test_field_percentiles_and_ranking():
+    from datetime import datetime, timezone
+
+    t = Table.objects.create(name="r1")
+    h = _hand(t, 1, 60000, 70000, datetime(2026, 9, 1, tzinfo=timezone.utc))
+    for i, (name, end) in enumerate([("ann", 50000), ("bob", 40000), ("cy", 0)], 2):
+        Seat.objects.create(hand=h, player=Player.objects.get_or_create(name=name)[0],
+                            seat_number=i, bankroll_start=60000, bankroll_end=end)
+    s = bankroll_series("sefk")[0]
+    # cy busted (0) and is left out of the field.
+    assert s["points"][0]["field"] == {"n": 3, "mean": 53333, "p25": 45000, "p50": 50000, "p75": 60000}
+    assert [(r["rank"], r["player"], r["me"], r["out"]) for r in s["ranking"]] == [
+        (1, "sefk", True, False), (2, "ann", False, False), (3, "bob", False, False), (4, "cy", False, True),
+    ]
+
+
+def test_ranking_uses_latest_hand(tournaments):
+    s = bankroll_series("sefk")[0]
+    assert [(r["player"], r["stack"], r["table"]) for r in s["ranking"]] == [("sefk", 58000, "a2")]
