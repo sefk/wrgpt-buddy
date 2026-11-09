@@ -113,6 +113,10 @@
     var fp = t.tournament_field || [];
     fsvg.innerHTML = "";
     var FH = 300;
+    var note = document.getElementById("field-note");
+    var last = fp[fp.length - 1];
+    note.textContent = note.getAttribute("data-base") +
+      (last ? " Latest: " + last.n + " players still in (" + last.eliminated + " eliminated, not counted)." : "");
     var ftext = fp.length ? "" : "No standings snapshots for this tournament yet.";
     ftip.textContent = ftext;
     if (!fp.length) return;
