@@ -26,6 +26,18 @@
   <p class="chart-tip muted small" id="chart-tip">Dashed orange lines mark a move to a different table.</p>
 </section>
 <section>
+  <h2>Tournament stacks</h2>
+  <p class="muted small">Stack range of every player still in, from the daily wrgpt.org standings snapshots, with my stack alongside.</p>
+  <svg id="field-chart" viewBox="0 0 800 300" role="img" aria-label="Tournament stack range over time"></svg>
+  <p class="chart-legend small">
+    <span class="key me"></span> Me
+    <span class="key mean"></span> Tournament average
+    <span class="key band"></span> Tournament 25th–75th %ile
+    <span class="key median"></span> Tournament median
+  </p>
+  <p class="chart-tip muted small" id="field-tip"></p>
+</section>
+<section>
   <h2>Player ranking</h2>
   <p class="muted small" id="ranking-note">Every player in the tournament, from the latest wrgpt.org standings: the top 15 and the players around me. Falls back to players seen at my tables when no standings have been scraped.</p>
   <svg id="ranking-chart" viewBox="0 0 800 200" role="img" aria-label="Player ranking by stack"></svg>

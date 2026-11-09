@@ -29,7 +29,8 @@ def bankroll_series(me: str | None = None) -> list[dict]:
 
     Each point also has `field`: {n, mean, p25, p50, p75} of the stacks of everyone
     still in at that table after the hand (me included), and each tournament has a
-    `ranking` of every player seen at its tables by their latest known stack.
+    `ranking` of every player (latest standings snapshot, else players seen at its tables)
+    and a `tournament_field` series, one point per standings snapshot.
     """
     me = me or settings.WRGPT_PLAYER_NAME
     hands = list(
@@ -66,6 +67,7 @@ def bankroll_series(me: str | None = None) -> list[dict]:
     starts = [min((t for t in (_when(h) for h, _ in run) if t), default=None) for run in runs]
     out = []
     for i, run in enumerate(runs, 1):
+        tsnaps = _window(snaps, starts, i - 1)
         points, last_time, last_table = [], None, None
         for j, (h, seat) in enumerate(run):
             nxt = run[j + 1][1].bankroll_start if j + 1 < len(run) else None
@@ -96,28 +98,53 @@ def bankroll_series(me: str | None = None) -> list[dict]:
             "ended": times[-1] if times else None,
             "current": points[-1]["after"],
             "points": points,
-            "ranking": _tournament_ranking(snaps, starts, i - 1, me)
+            "ranking": _tournament_ranking(tsnaps, me)
             or _ranking(hands, {h.table_id for h, _ in run}, me),
+            "tournament_field": _tournament_field(tsnaps, me),
         })
     return out
 
 
-def _tournament_ranking(snaps, starts, i, me) -> list[dict]:
-    """The latest standings snapshot taken during tournament i (all players, all tables)."""
+def _window(snaps, starts, i):
+    """Snapshots taken during tournament i, oldest first."""
     lo = starts[i]
     hi = starts[i + 1] if i + 1 < len(starts) else None
     if lo is None:
         return []
-    mine = [s for s in snaps if s.fetched_at >= lo and (hi is None or s.fetched_at < hi)]
-    if not mine:
+    return [s for s in snaps if s.fetched_at >= lo and (hi is None or s.fetched_at < hi)]
+
+
+def _tournament_ranking(snaps, me) -> list[dict]:
+    """The latest standings snapshot (all players, all tables)."""
+    if not snaps:
         return []
-    snap = mine[-1]
+    snap = snaps[-1]
     return [{
         "rank": r["rank"], "player": r["player"], "stack": r["stack"], "table": r["table"],
         "number": None, "time": snap.fetched_at.isoformat(), "me": r["player"] == me,
         "out": r["out"], "status": r["status"], "out_where": r.get("out_where", ""),
         "out_at": r.get("out_at", ""), "field": True,
     } for r in snap.rows]
+
+
+def _tournament_field(snaps, me) -> list[dict]:
+    """Stack distribution of everyone still in, one point per snapshot."""
+    out = []
+    for snap in snaps:
+        stacks = sorted(r["stack"] for r in snap.rows if not r["out"] and r["stack"])
+        if not stacks:
+            continue
+        mine = next((r for r in snap.rows if r["player"] == me), None)
+        out.append({
+            "time": snap.fetched_at.isoformat(), "n": len(stacks), "eliminated": snap.eliminated,
+            "mean": round(sum(stacks) / len(stacks)),
+            "p25": round(_pct(stacks, 0.25)), "p50": round(_pct(stacks, 0.5)),
+            "p75": round(_pct(stacks, 0.75)),
+            "min": stacks[0], "max": stacks[-1],
+            "my_rank": mine["rank"] if mine else None,
+            "my_stack": mine["stack"] if mine and not mine["out"] else None,
+        })
+    return out
 
 
 def _stack(seat) -> int | None:

@@ -60,4 +60,9 @@ def scrape(force: bool = False, page: str | None = None) -> StandingsSnapshot | 
     if not force and page is None and last and timezone.now() - last.fetched_at < MIN_INTERVAL:
         return None
     data = parse(page if page is not None else fetch())
-    return StandingsSnapshot.objects.create(**data)
+    snap = StandingsSnapshot.objects.create(**data)
+    # History is one snapshot per day (the day's latest); the newest stays fresh for the ranking.
+    day = timezone.localtime(snap.fetched_at).date()
+    StandingsSnapshot.objects.filter(
+        fetched_at__date=day, pk__lt=snap.pk).delete()
+    return snap

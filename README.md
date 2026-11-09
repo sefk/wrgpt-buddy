@@ -127,7 +127,9 @@ The Player ranking chart ranks everyone in the tournament, not just your table. 
 uses the tournament-wide standings scraped from wrgpt.org
 (`poker/standings.py`, at most every 30 minutes, run at the end of each poll; or
 `manage.py scrape_standings --force`). Until a snapshot exists it falls back to the
-players seen at your tables.
+players seen at your tables. One snapshot per day is kept (plus the newest), and the
+"Tournament stacks" chart plots the stack range of everyone still in (25th–75th
+percentile, median, average) from them, next to your own stack.
 
 ## Where things live
 

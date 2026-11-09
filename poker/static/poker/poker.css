@@ -208,9 +208,9 @@ code { font-size: .88em; word-break: break-all; }
 #bankroll-chart .dot { fill: var(--accent); }
 #bankroll-chart .event { stroke: #d97706; stroke-dasharray: 4 3; }
 #bankroll-chart text.event { fill: #d97706; font-weight: 600; stroke: none; }
-#bankroll-chart .band { fill: var(--field); opacity: .14; stroke: none; }
-#bankroll-chart .mean { fill: none; stroke: var(--field); stroke-width: 1.5; stroke-dasharray: 6 4; }
-#bankroll-chart .median { fill: none; stroke: var(--field); stroke-width: 1; opacity: .55; }
+#bankroll-chart .band, #field-chart .band { fill: var(--field); opacity: .14; stroke: none; }
+#bankroll-chart .mean, #field-chart .mean { fill: none; stroke: var(--field); stroke-width: 1.5; stroke-dasharray: 6 4; }
+#bankroll-chart .median, #field-chart .median { fill: none; stroke: var(--field); stroke-width: 1; opacity: .55; }
 .chart-tip { min-height: 1.4em; }
 .chart-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 6px 0 0; color: var(--muted); }
 .chart-legend .key { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--accent); margin-left: 10px; vertical-align: middle; }
@@ -231,3 +231,11 @@ code { font-size: .88em; word-break: break-all; }
 .banner { padding: 10px 14px; font-size: .9rem; }
 .banner.err { background: var(--err-bg); color: var(--err-fg); border-bottom: 1px solid var(--line); }
 .banner .muted { display: block; opacity: .8; font-size: .8rem; word-break: break-word; }
+
+#field-chart { width: 100%; height: auto; display: block; }
+#field-chart text { fill: var(--muted); font-size: 11px; }
+#field-chart .grid { stroke: var(--line); }
+#field-chart .line { fill: none; stroke: var(--accent); stroke-width: 2; }
+#field-chart .dot { fill: var(--accent); }
+#field-chart .fdot { fill: var(--field); }
+#field-chart .whisker { stroke: var(--field); stroke-width: 6; opacity: .25; stroke-linecap: round; }

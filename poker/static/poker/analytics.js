@@ -39,7 +39,7 @@
       return { p: p, x: mode === "time" ? ms : i + 1, y: p.after };
     });
     if (mode === "time") pts = pts.filter(function (q) { return q.x != null; });
-    if (!pts.length) { drawRanking(t); return; }
+    if (!pts.length) { drawField(t); drawRanking(t); return; }
     var field = showField.checked;
     var fpts = field ? pts.filter(function (q) { return q.p.field; }) : [];
     var xs = pts.map(function (q) { return q.x; }), ys = pts.map(function (q) { return q.y; });
@@ -103,7 +103,63 @@
         ", 25–75%ile " + money(f.p25) + "–" + money(f.p75);
       titled(c, label, tip, defaultTip);
     });
+    drawField(t);
     drawRanking(t);
+  }
+
+  var fsvg = document.getElementById("field-chart");
+  var ftip = document.getElementById("field-tip");
+  function drawField(t) {
+    var fp = t.tournament_field || [];
+    fsvg.innerHTML = "";
+    var FH = 300;
+    var ftext = fp.length ? "" : "No standings snapshots for this tournament yet.";
+    ftip.textContent = ftext;
+    if (!fp.length) return;
+    var mine = t.points.filter(function (p) { return p.time; }).map(function (p) {
+      return { x: Date.parse(p.time), y: p.after, p: p };
+    });
+    var xs = fp.map(function (f) { return Date.parse(f.time); }).concat(mine.map(function (q) { return q.x; }));
+    var ys = [];
+    fp.forEach(function (f) { ys.push(f.p25, f.p75, f.mean); });
+    mine.forEach(function (q) { ys.push(q.y); });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+    if (x0 === x1) { x0 -= 3600e3; x1 += 3600e3; }
+    var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    var pad = Math.max((y1 - y0) * 0.1, 500);
+    y0 -= pad; y1 += pad;
+    function sx(v) { return L + (v - x0) / (x1 - x0) * (W - L - R); }
+    function sy(v) { return FH - B - (v - y0) / (y1 - y0) * (FH - T - B); }
+    function f_(name, attrs, text) { return el(name, attrs, text, fsvg); }
+    ticks(y0, y1, 4).forEach(function (v) {
+      f_("line", { x1: L, x2: W - R, y1: sy(v), y2: sy(v), "class": "grid" });
+      f_("text", { x: L - 6, y: sy(v) + 4, "text-anchor": "end" }, money(v));
+    });
+    ticks(x0, x1, 4).forEach(function (v) {
+      f_("text", { x: sx(v), y: FH - B + 16, "text-anchor": "middle" },
+        new Date(v).toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+    });
+    var top = fp.map(function (f) { return sx(Date.parse(f.time)) + "," + sy(f.p75); });
+    var bot = fp.slice().reverse().map(function (f) { return sx(Date.parse(f.time)) + "," + sy(f.p25); });
+    if (fp.length > 1) f_("polygon", { "class": "band", points: top.concat(bot).join(" ") });
+    ["p50", "mean"].forEach(function (k) {
+      var pts = fp.map(function (f) { return sx(Date.parse(f.time)) + "," + sy(f[k]); });
+      if (fp.length > 1) f_("polyline", { "class": k === "mean" ? "mean" : "median", points: pts.join(" ") });
+    });
+    if (mine.length > 1) f_("polyline", { "class": "line", points: mine.map(function (q) { return sx(q.x) + "," + sy(q.y); }).join(" ") });
+    fp.forEach(function (f) {
+      var x = sx(Date.parse(f.time));
+      f_("line", { x1: x, x2: x, y1: sy(f.p25), y2: sy(f.p75), "class": "whisker" });
+      var c = f_("circle", { cx: x, cy: sy(f.p50), r: 4, "class": "fdot" });
+      titled(c, new Date(f.time).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ": " +
+        f.n + " still in (" + f.eliminated + " out), avg " + money(f.mean) + ", median " + money(f.p50) +
+        ", 25\u201375%ile " + money(f.p25) + "\u2013" + money(f.p75) +
+        (f.my_rank ? " \u00b7 me #" + f.my_rank + (f.my_stack ? " with " + money(f.my_stack) : "") : ""),
+        ftip, ftext);
+    });
+    mine.forEach(function (q) {
+      f_("circle", { cx: sx(q.x), cy: sy(q.y), r: 3, "class": "dot" });
+    });
   }
 
   var rsvg = document.getElementById("ranking-chart");

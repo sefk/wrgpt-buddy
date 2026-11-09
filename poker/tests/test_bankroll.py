@@ -102,3 +102,20 @@ def test_ranking_prefers_standings_snapshot(tournaments):
     assert snap and s[0]["ranking"] != s[1]["ranking"]
     assert [(r["rank"], r["player"], r["me"], r["out"]) for r in s[-1]["ranking"]] == [
         (1, "ann", False, False), (2, "sefk", True, False), (3, "bob", False, True)]
+    # One point per snapshot: live stacks only (bob is out), with my rank.
+    assert s[-1]["tournament_field"] == [{
+        "time": snap.fetched_at.isoformat(), "n": 2, "eliminated": 1, "mean": 70000,
+        "p25": 60000, "p50": 70000, "p75": 80000, "min": 50000, "max": 90000,
+        "my_rank": 2, "my_stack": 50000}]
+    assert s[0]["tournament_field"] == []
+
+
+def test_scrape_keeps_one_snapshot_per_day(tournaments):
+    from poker import standings
+    from poker.models import StandingsSnapshot
+
+    page = ("<p>Players Remaining: 1<br>Eliminated: 0 <tr align='center'><td>1</td><td align='left'>ann</td>"
+            "<td>90000</td><td>b1</td><td>0</td><td>in</td><td>1</td><td>1</td><td>&nbsp;</td></tr>")
+    standings.scrape(page=page)
+    last = standings.scrape(page=page)
+    assert list(StandingsSnapshot.objects.values_list("pk", flat=True)) == [last.pk]
