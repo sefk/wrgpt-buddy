@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from django.conf import settings
 
-from .models import Hand
+from .models import Hand, StandingsSnapshot
 
 # A table change whose first bankroll is within this fraction of the previous
 # hand's ending bankroll is a table move in the same tournament; anything else
@@ -62,6 +62,8 @@ def bankroll_series(me: str | None = None) -> list[dict]:
                 runs.append([(h, seat)])
         prev = (h, seat)
 
+    snaps = list(StandingsSnapshot.objects.order_by("fetched_at"))
+    starts = [min((t for t in (_when(h) for h, _ in run) if t), default=None) for run in runs]
     out = []
     for i, run in enumerate(runs, 1):
         points, last_time, last_table = [], None, None
@@ -94,9 +96,28 @@ def bankroll_series(me: str | None = None) -> list[dict]:
             "ended": times[-1] if times else None,
             "current": points[-1]["after"],
             "points": points,
-            "ranking": _ranking(hands, {h.table_id for h, _ in run}, me),
+            "ranking": _tournament_ranking(snaps, starts, i - 1, me)
+            or _ranking(hands, {h.table_id for h, _ in run}, me),
         })
     return out
+
+
+def _tournament_ranking(snaps, starts, i, me) -> list[dict]:
+    """The latest standings snapshot taken during tournament i (all players, all tables)."""
+    lo = starts[i]
+    hi = starts[i + 1] if i + 1 < len(starts) else None
+    if lo is None:
+        return []
+    mine = [s for s in snaps if s.fetched_at >= lo and (hi is None or s.fetched_at < hi)]
+    if not mine:
+        return []
+    snap = mine[-1]
+    return [{
+        "rank": r["rank"], "player": r["player"], "stack": r["stack"], "table": r["table"],
+        "number": None, "time": snap.fetched_at.isoformat(), "me": r["player"] == me,
+        "out": r["out"], "status": r["status"], "out_where": r.get("out_where", ""),
+        "out_at": r.get("out_at", ""), "field": True,
+    } for r in snap.rows]
 
 
 def _stack(seat) -> int | None:

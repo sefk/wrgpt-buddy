@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from poker import gmail, pollstatus, state
+from poker import gmail, pollstatus, standings, state
 from poker.models import RawEmail
 
 
@@ -57,3 +57,7 @@ class Command(BaseCommand):
             pollstatus.record_failure(f"{bad} messages failed to ingest")
             raise CommandError(f"{bad} messages failed to ingest")
         pollstatus.record_ok()
+        try:  # advisory; never fail a poll over it
+            standings.scrape()
+        except Exception as exc:
+            self.stderr.write(f"standings scrape failed: {type(exc).__name__}: {exc}")

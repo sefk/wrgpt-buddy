@@ -108,27 +108,44 @@
 
   var rsvg = document.getElementById("ranking-chart");
   var rtip = document.getElementById("ranking-tip");
+  var TOP = 15, AROUND = 5;
   function drawRanking(t) {
-    var rows = t.ranking || [];
+    var all = t.ranking || [];
     rsvg.innerHTML = "";
     rtip.textContent = "";
-    if (!rows.length) return;
-    var RL = 150, RR = 90, RT = 8, ROW = 22, RW = 800;
+    if (!all.length) return;
+    // Show the leaders and the neighbourhood around me; elide the rest.
+    var meIdx = -1;
+    all.forEach(function (r, i) { if (r.me) meIdx = i; });
+    var keep = {};
+    all.forEach(function (r, i) {
+      if (i < TOP || (meIdx >= 0 && Math.abs(i - meIdx) <= AROUND) || i === all.length - 1) keep[i] = true;
+    });
+    var rows = [];
+    all.forEach(function (r, i) {
+      if (!keep[i]) { if (rows.length && !rows[rows.length - 1].gap) rows.push({ gap: 0 }); if (rows.length) rows[rows.length - 1].gap++; return; }
+      rows.push(r);
+    });
+    var RL = 170, RR = 90, RT = 8, ROW = 22, RW = 800;
     var RH = RT + rows.length * ROW + 22;
     rsvg.setAttribute("viewBox", "0 0 " + RW + " " + RH);
-    var max = Math.max.apply(null, rows.map(function (r) { return r.stack; })) || 1;
+    var max = Math.max.apply(null, all.map(function (r) { return r.stack; })) || 1;
     function bx(v) { return RL + v / max * (RW - RL - RR); }
-    var live = rows.filter(function (r) { return !r.out; });
+    var live = all.filter(function (r) { return !r.out; });
     var avg = live.reduce(function (a, r) { return a + r.stack; }, 0) / (live.length || 1);
-    var me = rows.filter(function (r) { return r.me; })[0];
-    var fallback = me ? "You are #" + me.rank + " of " + rows.length + " (" + live.length + " still in) with " +
-      money(me.stack) + "." : live.length + " of " + rows.length + " players still in.";
+    var me = all[meIdx];
+    var fallback = me ? "You are #" + me.rank + " of " + all.length + " (" + live.length + " still in) with " +
+      (me.out ? "no chips" : money(me.stack)) + "." : live.length + " of " + all.length + " players still in.";
     rtip.textContent = fallback;
     var ax = bx(avg), yb = RT + rows.length * ROW;
     el("line", { x1: ax, x2: ax, y1: RT, y2: yb, "class": "avg" }, null, rsvg);
     el("text", { x: ax, y: yb + 14, "text-anchor": "middle", "class": "avg" }, "avg " + money(avg), rsvg);
     rows.forEach(function (r, i) {
       var y = RT + i * ROW;
+      if (r.gap) {
+        el("text", { x: RL - 8, y: y + 15, "text-anchor": "end", "class": "val" }, "\u22ee " + r.gap + " more", rsvg);
+        return;
+      }
       var g = el("g", { "class": "row" + (r.out ? " out" : "") }, null, rsvg);
       el("text", { x: RL - 8, y: y + 15, "text-anchor": "end", "class": r.me ? "me" : "" },
         r.rank + ". " + r.player, g);
@@ -137,8 +154,11 @@
       el("text", { x: bx(r.stack) + 6, y: y + 15, "class": "val" + (r.me ? " me" : "") },
         r.out ? "out" : money(r.stack), g);
       var when = r.time ? new Date(r.time).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
-      titled(g, "#" + r.rank + " " + r.player + ": " + money(r.stack) + " as of " + r.table + " hand #" +
-        r.number + (when ? " (" + when + ")" : ""), rtip, fallback);
+      var where = r.field
+        ? (r.out ? "out" + (r.out_where ? " at " + r.out_where : "") + (r.out_at ? " (" + r.out_at + ")" : "")
+                 : money(r.stack) + " at " + r.table + (r.status ? ", " + r.status : "")) + (when ? " \u2013 standings of " + when : "")
+        : money(r.stack) + " as of " + r.table + " hand #" + r.number + (when ? " (" + when + ")" : "");
+      titled(g, "#" + r.rank + " " + r.player + ": " + where, rtip, fallback);
     });
   }
 

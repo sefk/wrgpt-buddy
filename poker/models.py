@@ -258,3 +258,16 @@ class PlayerProfile(models.Model):
 
     def __str__(self):
         return f"{self.table.name} / {self.player.name} ({self.classification})"
+
+
+class StandingsSnapshot(models.Model):
+    """One scrape of wrgpt.org's tournament-wide standings (every player, all tables)."""
+
+    fetched_at = models.DateTimeField(auto_now_add=True)
+    remaining = models.PositiveIntegerField(default=0)
+    eliminated = models.PositiveIntegerField(default=0)
+    # [{rank, player, stack, table, status, out, out_where, out_at}], in page order.
+    rows = models.JSONField(default=list)
+
+    class Meta:
+        ordering = ["-fetched_at"]

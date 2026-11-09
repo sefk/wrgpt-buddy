@@ -83,3 +83,22 @@ def test_field_percentiles_and_ranking():
 def test_ranking_uses_latest_hand(tournaments):
     s = bankroll_series("sefk")[0]
     assert [(r["player"], r["stack"], r["table"]) for r in s["ranking"]] == [("sefk", 58000, "a2")]
+
+
+def test_ranking_prefers_standings_snapshot(tournaments):
+    from poker import standings
+
+    page = """<p>Players Remaining: 2 (50%)<br>Eliminated: 1
+    <tr align='center'><td>1</td><td align='left'>ann</td><td>90000</td><td><a href="x">b1</a></td><td>0</td><td>in</td><td>1</td><td>1</td><td>&nbsp;</td></tr>
+    <tr align='center'><td>2</td><td align='left'>sefk</td><td>50000</td><td><a href="x">b2</a></td><td>0</td><td>folded</td><td>1</td><td>1</td><td>&nbsp;</td></tr>
+    <tr><td colspan='2'>Eliminated Players</td><td>h</td></tr>
+    <tr><td align='center'>3</td><td>bob</td><td colspan='2'><a href="x">b9 - 3</a></td><td colspan='2'>Resigned</td><td colspan='3'>2026-09-21 06:00:00</td></tr>"""
+    parsed = standings.parse(page)
+    assert (parsed["remaining"], parsed["eliminated"], len(parsed["rows"])) == (2, 1, 3)
+    assert parsed["rows"][2]["out"] and parsed["rows"][2]["out_where"] == "b9 - 3"
+    snap = standings.scrape(page=page)
+    # Snapshot is taken "now", after every fixture tournament; it belongs to the last one.
+    s = bankroll_series("sefk")
+    assert snap and s[0]["ranking"] != s[1]["ranking"]
+    assert [(r["rank"], r["player"], r["me"], r["out"]) for r in s[-1]["ranking"]] == [
+        (1, "ann", False, False), (2, "sefk", True, False), (3, "bob", False, True)]

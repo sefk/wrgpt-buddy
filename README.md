@@ -123,6 +123,12 @@ or real time), with a dashed marker wherever you moved to another table. A new
 tournament starts when a table change doesn't carry the bankroll over (see
 `poker/bankroll.py`). `?t=<n>&x=time` preselects a view.
 
+The Player ranking chart ranks everyone in the tournament, not just your table. It
+uses the tournament-wide standings scraped from wrgpt.org
+(`poker/standings.py`, at most every 30 minutes, run at the end of each poll; or
+`manage.py scrape_standings --force`). Until a snapshot exists it falls back to the
+players seen at your tables.
+
 ## Where things live
 
 - Logs: `~/Library/Logs/wrgpt-buddy/{web,poll,recommend}.{out,err}.log`
