@@ -26,6 +26,10 @@ def bankroll_series(me: str | None = None) -> list[dict]:
     is my bankroll at the start of the hand (after blinds), `after` at the end.
     A hand with no ending bankroll uses the next hand's start in the same tournament,
     then my current bankroll if it is still being played, then its start.
+
+    Each point also has `field`: {n, mean, p25, p50, p75} of the stacks of everyone
+    still in at that table after the hand (me included), and each tournament has a
+    `ranking` of every player seen at its tables by their latest known stack.
     """
     me = me or settings.WRGPT_PLAYER_NAME
     hands = list(
@@ -78,6 +82,7 @@ def bankroll_series(me: str | None = None) -> list[dict]:
                 "time": t.isoformat() if t else None,
                 "before": seat.bankroll_start, "after": after,
                 "table_change": last_table is not None and h.table_id != last_table,
+                "field": _field(h, me, after),
             })
             last_table = h.table_id
         times = [p["time"] for p in points if p["time"]]
@@ -89,6 +94,71 @@ def bankroll_series(me: str | None = None) -> list[dict]:
             "ended": times[-1] if times else None,
             "current": points[-1]["after"],
             "points": points,
+            "ranking": _ranking(hands, {h.table_id for h, _ in run}, me),
+        })
+    return out
+
+
+def _stack(seat) -> int | None:
+    if seat.bankroll_end is not None:
+        return seat.bankroll_end
+    if seat.bankroll_now is not None:
+        return seat.bankroll_now
+    return seat.bankroll_start
+
+
+def _pct(xs: list[int], q: float) -> float:
+    """Linear-interpolated percentile of sorted xs (q in 0..1)."""
+    pos = (len(xs) - 1) * q
+    lo = int(pos)
+    hi = min(lo + 1, len(xs) - 1)
+    return xs[lo] + (xs[hi] - xs[lo]) * (pos - lo)
+
+
+def _field(hand, me: str, my_after: int) -> dict | None:
+    """Stack distribution at this table after the hand; busted players (0) are out."""
+    stacks = []
+    for s in hand.seats.all():
+        v = my_after if s.player.name == me else _stack(s)
+        if v:
+            stacks.append(v)
+    if not stacks:
+        return None
+    stacks.sort()
+    return {
+        "n": len(stacks),
+        "mean": round(sum(stacks) / len(stacks)),
+        "p25": round(_pct(stacks, 0.25)),
+        "p50": round(_pct(stacks, 0.5)),
+        "p75": round(_pct(stacks, 0.75)),
+    }
+
+
+def _ranking(hands, table_ids: set, me: str) -> list[dict]:
+    """Every player seen at these tables, by the stack in their latest hand there.
+
+    [{rank, player, stack, table, number, time, me, out}], biggest stack first;
+    players whose latest stack is 0 are out and rank last.
+    """
+    latest = {}
+    for h in hands:
+        if h.table_id not in table_ids:
+            continue
+        key = (_when(h) or _EPOCH, h.number)
+        for s in h.seats.all():
+            v = _stack(s)
+            if v is None:
+                continue
+            name = s.player.name
+            if name not in latest or key >= latest[name][0]:
+                latest[name] = (key, v, h)
+    rows = sorted(latest.items(), key=lambda kv: (-kv[1][1], kv[0].lower()))
+    out = []
+    for i, (name, ((t, _), v, h)) in enumerate(rows, 1):
+        out.append({
+            "rank": i, "player": name, "stack": v, "table": h.table.name, "number": h.number,
+            "time": t.isoformat() if t is not _EPOCH else None,
+            "me": name == me, "out": v == 0,
         })
     return out
 

@@ -14,9 +14,22 @@
       <label><input type="radio" name="xmode" value="hand" checked> Hand sequence</label>
       <label><input type="radio" name="xmode" value="time"> Real time</label>
     </span>
+    <label><input type="checkbox" id="show-field" checked> Table stacks</label>
   </div>
   <svg id="bankroll-chart" viewBox="0 0 800 340" role="img" aria-label="Bankroll over time"></svg>
-  <p class="chart-tip muted small" id="chart-tip">Dashed lines mark a move to a different table.</p>
+  <p class="chart-legend small">
+    <span class="key me"></span> Me
+    <span class="key mean"></span> Table average
+    <span class="key band"></span> Table 25th–75th %ile
+    <span class="key median"></span> Table median
+  </p>
+  <p class="chart-tip muted small" id="chart-tip">Dashed orange lines mark a move to a different table.</p>
+</section>
+<section>
+  <h2>Player ranking</h2>
+  <p class="muted small" id="ranking-note">Every player seen at this tournament's tables, by their stack in the latest hand they were seen in.</p>
+  <svg id="ranking-chart" viewBox="0 0 800 200" role="img" aria-label="Player ranking by stack"></svg>
+  <p class="chart-tip muted small" id="ranking-tip"></p>
 </section>
 {{ series|json_script:"bankroll-data" }}
 <script src="{% static 'poker/analytics.js' %}" defer></script>
