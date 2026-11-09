@@ -482,3 +482,58 @@ def test_live_prompt_uses_the_dealers_current_bankroll(my_turn):
     my_turn.seats.filter(player__name="sefk").update(bankroll_now=12345)
     text, snap = build_prompt(my_turn)
     assert snap["my_stack"] == 12345 and "Your stack: $12,345" in text
+
+
+# ---------- look-ahead ("if it folds to me") ----------
+@pytest.fixture
+def not_my_turn(my_turn):
+    other = my_turn.seats.exclude(player__name="sefk").first().player
+    my_turn.next_to_act = other
+    my_turn.betting_round = 3  # a street I have not acted on
+    my_turn.save()
+    return my_turn
+
+
+def test_lookahead_prompt_assumes_folds(not_my_turn):
+    text, snap = build_prompt(not_my_turn, "lookahead")
+    assert "LOOK-AHEAD" in text and "assumed to fold" in text
+    assert snap["next_to_act"] == "sefk" and snap["lookahead_folds"]
+    assert snap["lookahead_folds"][0] == not_my_turn.next_to_act.name
+    assert snap["to_call"] == 0  # nothing bet yet on the new street
+
+
+def test_due_lookaheads_once_per_street(not_my_turn):
+    first = engine.due_lookaheads()
+    assert [(r.point, r.decision_key) for r in first] == [("lookahead", "la-r3")]
+    assert engine.due_lookaheads() == []
+    assert engine.due_decisions() == []  # not my turn: no real analysis
+    not_my_turn.betting_round = 4
+    not_my_turn.save()
+    assert [r.decision_key for r in engine.due_lookaheads()] == ["la-r4"]
+
+
+def test_due_lookaheads_skips(not_my_turn):
+    me = not_my_turn.seats.get(player__name="sefk")
+    me.status = "folded"
+    me.save()
+    assert engine.due_lookaheads() == []
+    me.status = ""
+    me.save()
+    not_my_turn.next_to_act = me.player  # my turn: the real analysis handles it
+    not_my_turn.save()
+    assert engine.due_lookaheads() == []
+    not_my_turn.next_to_act = None
+    not_my_turn.is_over = True
+    not_my_turn.save()
+    assert engine.due_lookaheads() == []
+
+
+def test_lookahead_runs_and_shows(not_my_turn, fakes, client):
+    from django.urls import reverse
+    rec = engine.due_lookaheads()[0]
+    engine.run(rec)
+    rec.refresh_from_db()
+    assert rec.status == "done" and rec.actual == {}
+    r = client.get(reverse("poker:hand", args=["b17", 2]))
+    assert r.status_code == 200 and b"If it folds to" in r.content
+    assert b"Unknown analyses" not in r.content

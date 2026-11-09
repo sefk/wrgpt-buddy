@@ -13,6 +13,10 @@ from django.conf import settings
 
 from ..models import Action, Hand
 
+# Pseudo decision point of a look-ahead: the analysis of what I would do if the action
+# folds around to me from where it is now. It is not one of my real decision points.
+LOOKAHEAD = "lookahead"
+
 # Action kinds that are a decision I made (blinds, antes, vacation folds are not).
 DECISION_KINDS = {"fold", "check", "call", "bet", "raise", "all_in"}
 
@@ -53,7 +57,7 @@ def live_point(hand: Hand, me: str | None = None) -> DecisionPoint | None:
 
 def is_past(hand: Hand, point: str | None, me: str | None = None) -> bool:
     """True when `point` names a decision that is not the live one (so it needs a replay)."""
-    if not point:
+    if not point or point == LOOKAHEAD:
         return False
     live = live_point(hand, me)
     return live is None or live.point != point

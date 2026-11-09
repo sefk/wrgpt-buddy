@@ -14,7 +14,7 @@ from django.utils import timezone
 from poker.models import Hand, Recommendation
 
 from . import grading, local, sonnet
-from .points import actual_move, is_past, live_point, my_decisions
+from .points import LOOKAHEAD, actual_move, is_past, live_point, my_decisions
 from .prompt import build_prompt
 
 log = logging.getLogger("poker.advice")
@@ -189,6 +189,31 @@ def due_decisions() -> list[Recommendation]:
         rec, new = Recommendation.objects.get_or_create(
             hand=hand, decision_key=decision_key(hand), defaults={"point": lp.point if lp else ""}
         )
+        if new:
+            created.append(rec)
+    return created
+
+
+def due_lookaheads() -> list[Recommendation]:
+    """Queue one look-ahead per hand per street while it is someone else's turn.
+
+    "If it folds around to me": only for hands I am still in and have not yet acted on this
+    street (after I act, or once it is my turn, the real analysis takes over).
+    """
+    me = settings.WRGPT_PLAYER_NAME
+    created = []
+    qs = Hand.objects.dealt().filter(is_over=False, next_to_act__isnull=False).exclude(next_to_act__name=me)
+    for hand in qs.select_related("table", "next_to_act"):
+        rnd = hand.betting_round
+        mine = getattr(hand, "mine", None)
+        if not rnd or mine is None or not mine.hole_cards:
+            continue
+        if hand.seats.filter(player__name=me, status="folded").exists() or not hand.seats.filter(player__name=me).exists():
+            continue
+        if any(d.betting_round == rnd for d in my_decisions(hand, me)):
+            continue
+        rec, new = Recommendation.objects.get_or_create(
+            hand=hand, decision_key=f"la-r{rnd}", defaults={"point": LOOKAHEAD})
         if new:
             created.append(rec)
     return created

@@ -106,6 +106,11 @@ analysis (or Retry / Re-analyze when the hand has moved on) to queue one. The
 history page marks revealed results with a dot (all agree) or a diamond
 (disagreement).
 
+While it is someone else's turn, the worker also queues one look-ahead per street
+("If it folds to sefk"): the same analysis assuming everyone ahead of you folds and the
+action reaches you unchanged. It appears on the hand page until it is your turn, when
+the real analysis takes over; if anyone bets or raises in between, ignore it.
+
 ```sh
 uv run manage.py recommend              # analyze once, now
 uv run manage.py recommend_worker       # long-running loop that handles queued/automatic requests

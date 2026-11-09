@@ -124,6 +124,13 @@
     {% with pt=live %}{% include "poker/_pt_control.html" %}{% endwith %}
   </div>
   {% endif %}
+  {% if lookahead %}
+  <div class="live-row" id="pt-lookahead">
+    <h3>If it folds to {{ me }} &mdash; {{ round_name }}</h3>
+    <p class="muted small">Not your turn yet. This assumes everyone ahead of you folds; if anyone bets or raises, the real analysis runs when it reaches you.</p>
+    {% with pt=lookahead %}{% include "poker/_pt_control.html" %}{% endwith %}
+  </div>
+  {% endif %}
   {% if unknown %}
   <details class="older other">
     <summary>Unknown analyses ({{ unknown|length }})</summary>

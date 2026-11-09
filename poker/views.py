@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from .advice import engine, grading
 from .bankroll import bankroll_series
-from .advice.points import live_point, my_decisions
+from .advice.points import LOOKAHEAD, live_point, my_decisions
 from .models import Action, Hand, MyHand, PlayerProfile, Recommendation
 from .state import MIN_HANDS_FOR_BADGE, PROFILE_BLURBS
 
@@ -152,14 +152,14 @@ def _detail_context(hand, open_point=""):
         "next_to_act_name": nta,
         "any_shown": bool(shows),
     }
-    by_action, live_entry, other, analyzing = _point_entries(hand, mine, open_point)
+    by_action, live_entry, other, analyzing, ahead = _point_entries(hand, mine, open_point)
     shown = [a for st in street_list for a in st["actions"]]
     at_action, unknown = _place_by_time(other, shown)
     for st in street_list:
         st["actions"] = [
             {"a": a, "pt": by_action.get(a.pk), "notes": at_action.get(a.pk, [])} for a in st["actions"]
         ]
-    ctx.update(live=live_entry, unknown=unknown, analyzing=analyzing)
+    ctx.update(live=live_entry, lookahead=ahead, unknown=unknown, analyzing=analyzing)
     return ctx
 
 
@@ -269,7 +269,7 @@ def _point_entries(hand, mine, open_point=""):
     for r in recs:
         by_point.setdefault(r.point, []).append(r)
     live_name = live.point if live else None
-    claimed = {d.point for d in decisions}
+    claimed = {d.point for d in decisions} | {LOOKAHEAD}
     if live_name:
         claimed.add(live_name)
         # legacy rows (blank point) for this very decision belong to the live row
@@ -309,7 +309,13 @@ def _point_entries(hand, mine, open_point=""):
             other.append(o)
     other.sort(key=lambda o: o["obj"].created_at, reverse=True)
     analyzing = any(r.status in (Recommendation.PENDING, Recommendation.RUNNING) for r in recs)
-    return by_action, live_entry, other, analyzing
+    ahead = None
+    if not live and not hand.is_over and hand.betting_round:
+        la = [r for r in by_point.get(LOOKAHEAD, []) if r.decision_key.startswith(f"la-r{hand.betting_round}")]
+        if la:
+            ahead = {"point": LOOKAHEAD, "past": False, "decision": None, "anchor": "pt-lookahead", "open": False,
+                     "rec": _rec_info(la[0], hand, mine, False), "older": []}
+    return by_action, live_entry, other, analyzing, ahead
 
 
 def _place_by_time(entries, actions):
@@ -343,6 +349,8 @@ def request_analysis(request, table, number):
     if point:
         if live and point == live.point:
             key, anchor = f"req-{hand.last_sequence}-{ts}", "live"
+        elif point == LOOKAHEAD and not live and not hand.is_over:
+            key, anchor = f"la-req-{ts}", ""
         elif point in {d.point for d in my_decisions(hand)}:
             key, anchor = f"pt-{point}-{ts}", point
         else:

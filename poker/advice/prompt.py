@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from django.conf import settings
 
-from .points import is_past
+from .points import LOOKAHEAD, is_past
 from .replay import replay
 
 ROUND_NAMES = {1: "preflop", 2: "flop", 3: "turn", 4: "river"}
@@ -44,6 +44,8 @@ def _by_street(actions):
 
 def build_prompt(hand, point: str | None = None) -> tuple[str, dict]:
     """Prompt + snapshot for the live decision (point None or the live point) or a past one."""
+    if point == LOOKAHEAD:
+        return build_live_prompt(hand, lookahead=True)
     if is_past(hand, point):
         return build_past_prompt(hand, point)
     return build_live_prompt(hand)
@@ -133,7 +135,24 @@ def build_past_prompt(hand, point: str) -> tuple[str, dict]:
     return "\n".join(L), snapshot
 
 
-def build_live_prompt(hand) -> tuple[str, dict]:
+def _folders_before_me(seats, actor_id, me_name, stacks_now):
+    """Players due to act between the current actor and me (actor first), still able to act."""
+    ids = [s.player_id for s in seats]
+    if actor_id not in ids:
+        return []
+    out, i = [], ids.index(actor_id)
+    for _ in range(len(seats)):
+        s = seats[i % len(seats)]
+        i += 1
+        if s.player.name == me_name:
+            break
+        if s.status != "folded" and stacks_now.get(s.player.name) != 0:
+            out.append(s.player.name)
+    return out
+
+
+def build_live_prompt(hand, lookahead: bool = False) -> tuple[str, dict]:
+    """The decision I face now; with lookahead, the one I'd face if everyone ahead of me folds."""
     me_name = settings.WRGPT_PLAYER_NAME
     mine = getattr(hand, "mine", None)
     hole = (mine.hole_cards if mine else "") or ""
@@ -151,7 +170,13 @@ def build_live_prompt(hand) -> tuple[str, dict]:
         my_stack = me_seat.bankroll_now
 
     i_am_next = bool(hand.next_to_act and hand.next_to_act.name == me_name)
-    if i_am_next:
+    assumed_folds = []
+    if lookahead and not i_am_next and me_seat is not None:
+        # Folds add no chips: I face the biggest bet this round less what I have in.
+        assumed_folds = _folders_before_me(seats, hand.next_to_act_id, me_name, stacks_now)
+        street = w["street"] if w["rnd"] == hand.betting_round else {}
+        to_call = max(street.values(), default=0) - street.get(me_name, 0)
+    elif i_am_next:
         # "sefk is first to act" carries no amount: an unopened street, $0 to call. An
         # older private reminder's amount would be stale.
         to_call = hand.to_call or 0
@@ -167,9 +192,11 @@ def build_live_prompt(hand) -> tuple[str, dict]:
         "pot": pot,
         "to_call": to_call,
         "betting_round": rname,
-        "next_to_act": hand.next_to_act.name if hand.next_to_act else None,
+        "next_to_act": me_name if lookahead else (hand.next_to_act.name if hand.next_to_act else None),
         "my_stack": my_stack,
     }
+    if lookahead:
+        snapshot["lookahead_folds"] = assumed_folds
 
     L = []
     L.append(
@@ -178,7 +205,15 @@ def build_live_prompt(hand) -> tuple[str, dict]:
     )
     L.append(f"Table {hand.table.name}, hand {hand.number}" + (f", day {hand.day}" if hand.day else "") + ".")
     L.append(f"Betting round: {rname}.")
-    if hand.next_timeout:
+    if lookahead:
+        actor = hand.next_to_act.name if hand.next_to_act else "another player"
+        L.append(
+            f"LOOK-AHEAD: it is not your turn yet; {actor} is to act"
+            + (f", then {', '.join(assumed_folds[1:])}" if len(assumed_folds) > 1 else "")
+            + ". Assume every player who acts before you folds, so the action reaches you "
+            "unchanged, and recommend what you would do then."
+        )
+    elif hand.next_timeout:
         L.append(f"Action timeout: {hand.next_timeout:%Y-%m-%d %H:%M} UTC.")
     L.append("")
 
@@ -190,7 +225,12 @@ def build_live_prompt(hand) -> tuple[str, dict]:
             tags.append("dealer button")
         if s.player.name == me_name:
             tags.append("YOU")
-        if hand.next_to_act and s.player_id == hand.next_to_act_id:
+        if lookahead:
+            if s.player.name in assumed_folds:
+                tags.append("assumed to fold")
+            elif s.player.name == me_name:
+                tags.append("next to act, once they fold")
+        elif hand.next_to_act and s.player_id == hand.next_to_act_id:
             tags.append("next to act")
         st = s.status or "in"
         if st == "folded":
@@ -198,7 +238,7 @@ def build_live_prompt(hand) -> tuple[str, dict]:
         behind = stacks_now.get(s.player.name)
         stack = f"${behind:,}" if behind is not None else "?"
         L.append(f"  seat {s.seat_number}: {s.player.name}  {stack}  [{st}]" + (f"  ({', '.join(tags)})" if tags else ""))
-    live = [s for s in seats if s.status not in ("folded",)]
+    live = [s for s in seats if s.status not in ("folded",) and s.player.name not in assumed_folds]
     L.append(f"Players still in the hand: {len(live)}.")
     if dealer_idx is not None and me_seat is not None:
         L.append(_position_line([s.player.name for s in seats], seats[dealer_idx].player.name, me_name))
