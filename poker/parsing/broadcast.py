@@ -165,10 +165,12 @@ def parse_broadcast(subject: str, body: str) -> Broadcast:
     addressed_to = am["to"] if am else None
 
     lines = body.splitlines()
+    # Usually the first line, but a player's table talk ("% ..." lines and a "-- Name --"
+    # signature) can come first, so take the first line that is the header.
     header = None
-    for ln in lines:
-        if ln.strip():
-            header = _HEADER_RE.match(ln.strip())
+    for i, ln in enumerate(lines):
+        if header := _HEADER_RE.match(ln.strip()):
+            del lines[i]
             break
     if not header:
         raise ValueError("broadcast body has no 'Table ..., Hand ..., Day ...' header")
@@ -192,7 +194,7 @@ def parse_broadcast(subject: str, body: str) -> Broadcast:
         talk.clear()
         return replace(ev, text=text)
 
-    for raw in lines[1:] if lines else []:
+    for raw in lines:
         line = raw.rstrip()
         if _ROW_RE.match(line):
             if not in_row:

@@ -298,3 +298,24 @@ def test_status_url_must_be_http():
     body = TALK_BODY + "! The current status can be found at javascript:alert(1)\n"
     b = parse_broadcast("[b17.10042][hand:4] Holdem Game Broadcast Message(-> sefk)", body)
     assert b.status_url is None
+
+
+TALK_FIRST_BODY = """% Of course
+% On Mon, Nov 9, 2026 at 6:58 PM <dealer@wrgpt.org> wrote:
+% (dealer suppressed lines starting with '>' or ':')
+! -- Aardvark --
+_____________________________________________________________________________
+
+! Table b17, Hand 36, Day 29
+
+! Aardvark calls - side pot
+"""
+
+
+def test_table_talk_before_the_header_still_parses():
+    # The broadcast that ends a hand can open with a player's talk; the header is then
+    # not the first line. Losing it left the hand "unfinished" forever.
+    b = parse_broadcast("[b17.10491][hand:36] Holdem Game Broadcast Message(*)", TALK_FIRST_BODY)
+    assert (b.table, b.hand_number, b.day) == ("b17", 36, 29)
+    assert b.events[0].kind == EventKind.TABLE_TALK and len(b.events) == 2
+    assert b.events[0].player == "Aardvark" and "Of course" in b.events[0].text
