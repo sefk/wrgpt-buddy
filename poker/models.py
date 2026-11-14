@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 
 
@@ -214,7 +216,11 @@ class Recommendation(models.Model):
         max_length=30, blank=True,
         help_text="overall: 'agree' if every local model agrees with Sonnet, else the worst grade",
     )
-    cost_usd = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
+    cost_usd = models.DecimalField(
+        max_digits=8, decimal_places=4, null=True, blank=True,
+        help_text="total at list prices: OpenRouter's charge plus Sonnet's and the judge's API-rate "
+        "estimates from the claude CLI. See billed_usd / notional_usd for the split.",
+    )
     error = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(null=True, blank=True)
@@ -227,6 +233,19 @@ class Recommendation(models.Model):
 
     def __str__(self):
         return f"{self.table_name} hand {self.hand_number} {self.point or self.decision_key} {self.status}"
+
+    @property
+    def billed_usd(self) -> Decimal:
+        """Money actually charged: what OpenRouter reported for its opinions (local models are free)."""
+        total = sum((Decimal(str(o.get("cost") or 0)) for o in self.opinions), Decimal(0))
+        return total.quantize(Decimal("0.0001"))
+
+    @property
+    def notional_usd(self) -> Decimal | None:
+        """Sonnet and the judge at API list prices, which a subscription doesn't bill."""
+        if self.cost_usd is None:
+            return None
+        return max(self.cost_usd - self.billed_usd, Decimal(0))
 
     def save(self, *args, **kwargs):
         if self.hand_id and not self.table_name:

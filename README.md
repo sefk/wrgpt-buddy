@@ -91,9 +91,14 @@ because JIT loads right after a reboot have stalled. The request timeout then
 covers inference only (`ADVICE_LOCAL_TIMEOUT_S`, 300s).
 
 A fourth model, Qwen Flash (`qwen/qwen3.8-flash`), runs on OpenRouter, about
-$0.003 per decision, and is counted in the recommendation's cost. Set
-`OPENROUTER_API_KEY` in `.env` to enable it; without a key it is skipped. Change
-the model with `ADVICE_REMOTE_MODELS` (`model_id=Label`; empty disables it).
+$0.003 per decision. Set `OPENROUTER_API_KEY` in `.env` to enable it; without a
+key it is skipped. Change the model with `ADVICE_REMOTE_MODELS` (`model_id=Label`;
+empty disables it).
+
+Each recommendation shows its cost in two parts. **Billed** is what OpenRouter
+charged (the local models are free). **Notional** is Sonnet and the judge turn at
+API list prices, as reported by the `claude` CLI; the Claude subscription covers
+those, so it isn't money spent.
 
 The analysis runs automatically but stays hidden. The hand page shows only
 "Ready" until you press Show recommendation. You can also press Request

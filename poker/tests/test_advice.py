@@ -480,6 +480,8 @@ def test_engine_adds_remote_opinion_and_cost(my_turn, fakes, monkeypatch, settin
     assert rec.status == "done", rec.error
     assert [o["label"] for o in rec.opinions] == ["Sonnet", "Qwen", "gpt-oss", "Qwen Flash"]
     assert float(rec.cost_usd) == pytest.approx(0.103)
+    assert float(rec.billed_usd) == pytest.approx(0.003)  # OpenRouter only
+    assert float(rec.notional_usd) == pytest.approx(0.10)  # Sonnet + judge at API rates
     assert [s["label"] for s in rec.steps][1:3] == ["gpt-oss (local)", "Qwen Flash (OpenRouter)"]
 
 

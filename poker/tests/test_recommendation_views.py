@@ -124,7 +124,7 @@ def test_done_past_collapsed_summary_and_expanded_content(hand, client):
     assert "you: call $400" in summary and "different size" in summary
     # all content is in the page (details just hides it), no reveal needed
     for text in ("SONNET-REASON", "QWEN-REASON", "GPT-REASON", "ON-ACTUAL-COMMENT", "Judge on your move",
-                 "sefk calls $400", "JUDGE-EVAL-GPT", "cost $0.0123", "1234 cache-read", "Re-run"):
+                 "sefk calls $400", "JUDGE-EVAL-GPT", "billed $0.0000", "notional $0.0123", "1234 cache-read", "Re-run"):
         assert text in seg, text
     assert "Show recommendation" not in body
     assert "<details class=\"models\" open>" not in body

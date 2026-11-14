@@ -48,7 +48,7 @@
     {% if s.to_call is not None and s.to_call != "" %}&middot; {{ s.to_call|money }} to call{% endif %}
   </div>
   {% endwith %}
-  <div>{% if r.obj.cost_usd is not None %}cost ${{ r.obj.cost_usd|floatformat:4 }}{% endif %}{% if r.cache_read %} &middot; {{ r.cache_read }} cache-read tokens{% endif %}</div>
+  <div>{% if r.obj.cost_usd is not None %}billed ${{ r.obj.billed_usd|floatformat:4 }} &middot; <span title="Sonnet and the judge at API list prices; covered by the Claude subscription">notional ${{ r.obj.notional_usd|floatformat:4 }}</span>{% endif %}{% if r.cache_read %} &middot; {{ r.cache_read }} cache-read tokens{% endif %}</div>
   {% if r.stale %}
   <div class="stale"><strong>Stale: computed for an earlier state.</strong>
     {% include "poker/_ask_form.html" with label="Re-analyze" point=pt.point %}</div>
