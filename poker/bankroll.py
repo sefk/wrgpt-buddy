@@ -15,6 +15,15 @@ SAME_TOURNAMENT_TOLERANCE = 0.01
 _EPOCH = datetime.min.replace(tzinfo=timezone.utc)
 
 
+def _friend_index(name: str) -> int | None:
+    """Position of `name` in WRGPT_FRIENDS (case-insensitive), or None."""
+    low = name.lower()
+    for i, f in enumerate(settings.WRGPT_FRIENDS):
+        if f.lower() == low:
+            return i
+    return None
+
+
 def _when(hand):
     return hand.started_at or hand.ended_at
 
@@ -101,6 +110,7 @@ def bankroll_series(me: str | None = None) -> list[dict]:
             "ranking": _tournament_ranking(tsnaps, me)
             or _ranking(hands, {h.table_id for h, _ in run}, me),
             "tournament_field": _tournament_field(tsnaps, me),
+            "friends": list(settings.WRGPT_FRIENDS),
         })
     return out
 
@@ -123,7 +133,7 @@ def _tournament_ranking(snaps, me) -> list[dict]:
         "rank": r["rank"], "player": r["player"], "stack": r["stack"], "table": r["table"],
         "number": None, "time": snap.fetched_at.isoformat(), "me": r["player"] == me,
         "out": r["out"], "status": r["status"], "out_where": r.get("out_where", ""),
-        "out_at": r.get("out_at", ""), "field": True,
+        "out_at": r.get("out_at", ""), "field": True, "friend": _friend_index(r["player"]),
     } for r in snap.rows]
 
 
@@ -143,6 +153,12 @@ def _tournament_field(snaps, me) -> list[dict]:
             "min": stacks[0], "max": stacks[-1],
             "my_rank": mine["rank"] if mine else None,
             "my_stack": mine["stack"] if mine and not mine["out"] else None,
+            # My friends' standing in this snapshot; stack is None once they are out.
+            "friends": [
+                {"i": i, "player": r["player"], "rank": r["rank"],
+                 "stack": None if r["out"] else r["stack"]}
+                for r in snap.rows if (i := _friend_index(r["player"])) is not None
+            ],
         })
     return out
 
@@ -206,7 +222,7 @@ def _ranking(hands, table_ids: set, me: str) -> list[dict]:
         out.append({
             "rank": i, "player": name, "stack": v, "table": h.table.name, "number": h.number,
             "time": t.isoformat() if t is not _EPOCH else None,
-            "me": name == me, "out": v == 0,
+            "me": name == me, "out": v == 0, "friend": _friend_index(name),
         })
     return out
 

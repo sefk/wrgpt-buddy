@@ -123,10 +123,22 @@
     var mine = t.points.filter(function (p) { return p.time; }).map(function (p) {
       return { x: Date.parse(p.time), y: p.after, p: p };
     });
+    // One series per friend: their stack at each snapshot they are still in.
+    var friendPts = [];
+    (t.friends || []).forEach(function (name, i) {
+      var pts = [];
+      fp.forEach(function (f) {
+        (f.friends || []).forEach(function (fr) {
+          if (fr.i === i && fr.stack) pts.push({ x: Date.parse(f.time), y: fr.stack, rank: fr.rank });
+        });
+      });
+      friendPts.push({ name: name, i: i, pts: pts });
+    });
     var xs = fp.map(function (f) { return Date.parse(f.time); }).concat(mine.map(function (q) { return q.x; }));
     var ys = [];
     fp.forEach(function (f) { ys.push(f.p25, f.p75, f.mean); });
     mine.forEach(function (q) { ys.push(q.y); });
+    friendPts.forEach(function (s) { s.pts.forEach(function (q) { ys.push(q.y); }); });
     var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
     if (x0 === x1) { x0 -= 3600e3; x1 += 3600e3; }
     var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
@@ -150,6 +162,15 @@
       var pts = fp.map(function (f) { return sx(Date.parse(f.time)) + "," + sy(f[k]); });
       if (fp.length > 1) f_("polyline", { "class": k === "mean" ? "mean" : "median", points: pts.join(" ") });
     });
+    friendPts.forEach(function (s) {
+      var cls = "friend f" + s.i;
+      if (s.pts.length > 1) f_("polyline", { "class": cls, points: s.pts.map(function (q) { return sx(q.x) + "," + sy(q.y); }).join(" ") });
+      s.pts.forEach(function (q) {
+        var c = f_("circle", { cx: sx(q.x), cy: sy(q.y), r: 3.5, "class": "fr " + cls });
+        titled(c, s.name + " \u00b7 " + new Date(q.x).toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+          ": #" + q.rank + " with " + money(q.y), ftip, ftext);
+      });
+    });
     if (mine.length > 1) f_("polyline", { "class": "line", points: mine.map(function (q) { return sx(q.x) + "," + sy(q.y); }).join(" ") });
     fp.forEach(function (f) {
       var x = sx(Date.parse(f.time));
@@ -158,7 +179,10 @@
       titled(c, new Date(f.time).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + ": " +
         f.n + " still in (" + f.eliminated + " out), avg " + money(f.mean) + ", median " + money(f.p50) +
         ", 25\u201375%ile " + money(f.p25) + "\u2013" + money(f.p75) +
-        (f.my_rank ? " \u00b7 me #" + f.my_rank + (f.my_stack ? " with " + money(f.my_stack) : "") : ""),
+        (f.my_rank ? " \u00b7 me #" + f.my_rank + (f.my_stack ? " with " + money(f.my_stack) : "") : "") +
+        (f.friends || []).map(function (fr) {
+          return " \u00b7 " + fr.player + " #" + fr.rank + (fr.stack ? " with " + money(fr.stack) : " (out)");
+        }).join(""),
         ftip, ftext);
     });
     mine.forEach(function (q) {
@@ -177,9 +201,12 @@
     // Show the leaders and the neighbourhood around me; elide the rest.
     var meIdx = -1;
     all.forEach(function (r, i) { if (r.me) meIdx = i; });
+    var friendIdx = [];
+    all.forEach(function (r, i) { if (r.friend != null) friendIdx.push(i); });
     var keep = {};
     all.forEach(function (r, i) {
-      if (i < TOP || (meIdx >= 0 && Math.abs(i - meIdx) <= AROUND) || i === all.length - 1) keep[i] = true;
+      var nearFriend = friendIdx.some(function (j) { return Math.abs(i - j) <= 1; });
+      if (i < TOP || (meIdx >= 0 && Math.abs(i - meIdx) <= AROUND) || nearFriend || i === all.length - 1) keep[i] = true;
     });
     var rows = [];
     all.forEach(function (r, i) {
@@ -196,6 +223,10 @@
     var me = all[meIdx];
     var fallback = me ? "You are #" + me.rank + " of " + all.length + " (" + live.length + " still in) with " +
       (me.out ? "no chips" : money(me.stack)) + "." : live.length + " of " + all.length + " players still in.";
+    friendIdx.forEach(function (j) {
+      var fr = all[j];
+      fallback += " " + fr.player + " is #" + fr.rank + (fr.out ? " (out)." : " with " + money(fr.stack) + ".");
+    });
     rtip.textContent = fallback;
     var ax = bx(avg), yb = RT + rows.length * ROW;
     el("line", { x1: ax, x2: ax, y1: RT, y2: yb, "class": "avg" }, null, rsvg);
@@ -206,12 +237,13 @@
         el("text", { x: RL - 8, y: y + 15, "text-anchor": "end", "class": "val" }, "\u22ee " + r.gap + " more", rsvg);
         return;
       }
+      var fcls = r.friend != null ? " friend f" + r.friend : "";
       var g = el("g", { "class": "row" + (r.out ? " out" : "") }, null, rsvg);
-      el("text", { x: RL - 8, y: y + 15, "text-anchor": "end", "class": r.me ? "me" : "" },
+      el("text", { x: RL - 8, y: y + 15, "text-anchor": "end", "class": (r.me ? "me" : "") + fcls },
         r.rank + ". " + r.player, g);
       el("rect", { x: RL, y: y + 3, width: Math.max(bx(r.stack) - RL, 1), height: ROW - 6, rx: 3,
-        "class": "bar" + (r.me ? " me" : "") }, null, g);
-      el("text", { x: bx(r.stack) + 6, y: y + 15, "class": "val" + (r.me ? " me" : "") },
+        "class": "bar" + (r.me ? " me" : "") + fcls }, null, g);
+      el("text", { x: bx(r.stack) + 6, y: y + 15, "class": "val" + (r.me ? " me" : "") + fcls },
         r.out ? "out" : money(r.stack), g);
       var when = r.time ? new Date(r.time).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
       var where = r.field

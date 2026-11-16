@@ -136,6 +136,12 @@ players seen at your tables. One snapshot per day is kept (plus the newest), and
 "Tournament stacks" chart plots the stack range of everyone still in (25th–75th
 percentile, median, average) from them, next to your own stack.
 
+Friends are tracked too: `WRGPT_FRIENDS` (comma-separated player names, default
+`OakTownDad,bdubbb`, matched case-insensitively) adds a line per friend to the
+Tournament stacks chart and highlights them, with their neighbours, in the Player
+ranking. Their history comes from the stored snapshots, so it is there from the
+first one.
+
 ## Where things live
 
 - Logs: `~/Library/Logs/wrgpt-buddy/{web,poll,recommend}.{out,err}.log`

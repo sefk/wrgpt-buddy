@@ -179,6 +179,8 @@ MAILERS = {
 
 # WRGPT
 WRGPT_PLAYER_NAME = os.environ.get('WRGPT_PLAYER_NAME', 'sefk')
+# Friends in the tournament, tracked on the Analytics page (comma-separated player names).
+WRGPT_FRIENDS = _env_list('WRGPT_FRIENDS', 'OakTownDad,bdubbb')
 WRGPT_PLAYER_EMAIL = os.environ.get('WRGPT_PLAYER_EMAIL', 'sefklon@gmail.com')
 WRGPT_DEALER_TZ = 'America/Los_Angeles'
 

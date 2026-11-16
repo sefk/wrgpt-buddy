@@ -3,12 +3,14 @@
   --accent: #1f6f50; --warn-bg: #fff4d6; --warn-fg: #6b4b00; --err-bg: #fde4e1; --err-fg: #8a1c12;
   --card-bg: #fff; --card-line: #c9c6bc; --pos: #1b7a3d; --neg: #b3261e; --me: #e6f2ec;
   --spade: #1d1f23; --club: #1b7a3d; --heart: #c62828; --diamond: #1565c0; --field: #1565c0;
+  --f0: #b5338a; --f1: #c26a00;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #14161a; --panel: #1d2026; --text: #e6e7ea; --muted: #9aa0a8; --line: #2c3038;
     --accent: #4fc08d; --warn-bg: #3a2f10; --warn-fg: #f2d38a; --err-bg: #43191a; --err-fg: #ffb4ab;
     --card-bg: #e9e8e3; --card-line: #555; --pos: #5fd388; --neg: #ff8a80; --me: #1f3329;
+    --f0: #e879c0; --f1: #f0a03c;
     --spade: #1d1f23; --club: #1b7a3d; --heart: #c62828; --diamond: #1565c0; --field: #6aa9f0;
   }
 }
@@ -238,4 +240,12 @@ code { font-size: .88em; word-break: break-all; }
 #field-chart .line { fill: none; stroke: var(--accent); stroke-width: 2; }
 #field-chart .dot { fill: var(--accent); }
 #field-chart .fdot { fill: var(--field); }
+#field-chart .friend { fill: none; stroke-width: 2; }
+#field-chart .friend.f0 { stroke: var(--f0); } #field-chart .friend.f1 { stroke: var(--f1); }
+#field-chart .fr { stroke: none; }
+#field-chart .fr.f0 { fill: var(--f0); } #field-chart .fr.f1 { fill: var(--f1); }
+#ranking-chart .bar.friend.f0 { fill: var(--f0); opacity: 1; } #ranking-chart .bar.friend.f1 { fill: var(--f1); opacity: 1; }
+#ranking-chart text.friend { font-weight: 700; }
+#ranking-chart text.friend.f0 { fill: var(--f0); } #ranking-chart text.friend.f1 { fill: var(--f1); }
+.chart-legend .key.friend.f0 { border-top-color: var(--f0); } .chart-legend .key.friend.f1 { border-top-color: var(--f1); }
 #field-chart .whisker { stroke: var(--field); stroke-width: 6; opacity: .25; stroke-linecap: round; }

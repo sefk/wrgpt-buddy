@@ -574,4 +574,5 @@ def hand_list(request):
 
 
 def analytics(request):
-    return render(request, "poker/analytics.html", {"nav": "analytics", "series": bankroll_series()})
+    return render(request, "poker/analytics.html", {
+        "nav": "analytics", "series": bankroll_series(), "friends": settings.WRGPT_FRIENDS})

@@ -106,7 +106,7 @@ def test_ranking_prefers_standings_snapshot(tournaments):
     assert s[-1]["tournament_field"] == [{
         "time": snap.fetched_at.isoformat(), "n": 2, "eliminated": 1, "mean": 70000,
         "p25": 60000, "p50": 70000, "p75": 80000, "min": 50000, "max": 90000,
-        "my_rank": 2, "my_stack": 50000}]
+        "my_rank": 2, "my_stack": 50000, "friends": []}]
     assert s[0]["tournament_field"] == []
 
 
@@ -119,3 +119,25 @@ def test_scrape_keeps_one_snapshot_per_day(tournaments):
     standings.scrape(page=page)
     last = standings.scrape(page=page)
     assert list(StandingsSnapshot.objects.values_list("pk", flat=True)) == [last.pk]
+
+
+def test_friends_are_tracked_in_ranking_and_snapshots(tournaments, settings):
+    from poker import standings
+
+    settings.WRGPT_FRIENDS = ["OakTownDad", "bdubbb"]
+    page = """<p>Players Remaining: 3 (50%)<br>Eliminated: 1
+    <tr align='center'><td>1</td><td align='left'>ann</td><td>90000</td><td><a href="x">b1</a></td><td>0</td><td>in</td><td>1</td><td>1</td><td>&nbsp;</td></tr>
+    <tr align='center'><td>2</td><td align='left'>oaktowndad</td><td>70000</td><td><a href="x">b1</a></td><td>0</td><td>in</td><td>1</td><td>1</td><td>&nbsp;</td></tr>
+    <tr align='center'><td>3</td><td align='left'>sefk</td><td>50000</td><td><a href="x">b2</a></td><td>0</td><td>folded</td><td>1</td><td>1</td><td>&nbsp;</td></tr>
+    <tr><td colspan='2'>Eliminated Players</td><td>h</td></tr>
+    <tr><td align='center'>4</td><td>bdubbb</td><td colspan='2'><a href="x">b9 - 3</a></td><td colspan='2'>Resigned</td><td colspan='3'>2026-09-21 06:00:00</td></tr>"""
+    standings.scrape(page=page)
+    t = bankroll_series("sefk")[-1]
+    assert t["friends"] == ["OakTownDad", "bdubbb"]
+    # Matched case-insensitively; others have no friend index.
+    assert [(r["player"], r["friend"]) for r in t["ranking"]] == [
+        ("ann", None), ("oaktowndad", 0), ("sefk", None), ("bdubbb", 1)]
+    # Per snapshot: where each friend stands, with no stack once they are out.
+    assert t["tournament_field"][0]["friends"] == [
+        {"i": 0, "player": "oaktowndad", "rank": 2, "stack": 70000},
+        {"i": 1, "player": "bdubbb", "rank": 4, "stack": None}]
