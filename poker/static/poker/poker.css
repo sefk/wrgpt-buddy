@@ -213,6 +213,13 @@ code { font-size: .88em; word-break: break-all; }
 #bankroll-chart .band, #field-chart .band { fill: var(--field); opacity: .14; stroke: none; }
 #bankroll-chart .mean, #field-chart .mean { fill: none; stroke: var(--field); stroke-width: 1.5; stroke-dasharray: 6 4; }
 #bankroll-chart .median, #field-chart .median { fill: none; stroke: var(--field); stroke-width: 1; opacity: .55; }
+#flop-chart, #win-chart { width: 100%; height: auto; display: block; }
+#flop-chart .grid, #win-chart .grid { stroke: var(--line); }
+#flop-chart text, #win-chart text { fill: var(--muted); font-size: 11px; }
+#flop-chart .line, #win-chart .line { fill: none; stroke: var(--accent); stroke-width: 2; }
+#flop-chart .dot, #win-chart .dot { fill: var(--accent); }
+#flop-chart .mean, #win-chart .mean { fill: none; stroke: var(--field); stroke-width: 1.5; stroke-dasharray: 6 4; }
+#flop-chart .event, #win-chart .event { stroke: #d97706; stroke-dasharray: 4 3; }
 .chart-tip { min-height: 1.4em; }
 .chart-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 6px 0 0; color: var(--muted); }
 .chart-legend .key { display: inline-block; width: 18px; height: 0; border-top: 2px solid var(--accent); margin-left: 10px; vertical-align: middle; }

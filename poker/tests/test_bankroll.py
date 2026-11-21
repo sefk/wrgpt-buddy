@@ -2,7 +2,7 @@ import pytest
 from django.urls import reverse
 
 from poker.bankroll import bankroll_series, current_bankroll
-from poker.models import Hand, Player, Seat, Table
+from poker.models import Action, Hand, Player, Seat, Table
 
 pytestmark = pytest.mark.django_db
 
@@ -141,3 +141,44 @@ def test_friends_are_tracked_in_ranking_and_snapshots(tournaments, settings):
     assert t["tournament_field"][0]["friends"] == [
         {"i": 0, "player": "oaktowndad", "rank": 2, "stack": 70000},
         {"i": 1, "player": "bdubbb", "rank": 4, "stack": None}]
+
+
+def _play(table, number, when, board, actions, over=True):
+    """A hand of mine; actions are (kind, player, betting_round)."""
+    h = _hand(table, number, 60000, 60000, when, over=over)
+    h.board = board
+    h.save()
+    for i, (kind, who, rnd) in enumerate(actions):
+        Action.objects.create(
+            hand=h, player=Player.objects.get_or_create(name=who)[0], kind=kind,
+            betting_round=rnd, order=i)
+    return h
+
+
+def test_flop_and_win_stats():
+    from datetime import datetime, timezone
+
+    t = Table.objects.create(name="p1")
+    at = lambda d: datetime(2026, 9, d, tzinfo=timezone.utc)
+    _play(t, 1, at(1), "", [("fold", "sefk", 1)])                           # no flop
+    _play(t, 2, at(2), "2c 3c 4c", [("fold", "sefk", 1), ("wins", "x", 3)])  # folded preflop
+    _play(t, 3, at(3), "2c 3c 4c", [("wins", "sefk", 4)])                   # in, won
+    _play(t, 4, at(4), "2c 3c 4c", [("fold", "sefk", 2), ("wins", "x", 3)])  # in, folded on the flop
+    _play(t, 5, at(5), "2c 3c", [], over=False)                              # still playing
+    pts = bankroll_series("sefk")[0]["points"]
+    assert [p["flop"] for p in pts] == [False, False, True, True, None]
+    assert [p["won"] for p in pts] == [False, False, True, False, None]
+    assert [p["cum_flop"] for p in pts] == [0.0, 0.0, 33.3, 50.0, None]
+    assert [p["cum_win"] for p in pts] == [None, None, 100.0, 50.0, None]
+    assert pts[3]["roll_flop"] == 50.0 and pts[3]["roll_win"] == 50.0
+
+
+def test_rolling_window(settings):
+    from datetime import datetime, timezone
+
+    t = Table.objects.create(name="p2")
+    for n in range(1, 16):  # first 5 hands see a flop, the last 10 do not
+        _play(t, n, datetime(2026, 9, n, tzinfo=timezone.utc),
+              "2c 3c 4c" if n <= 5 else "", [("fold", "sefk", 1)] if n > 5 else [])
+    last = bankroll_series("sefk")[0]["points"][-1]
+    assert last["roll_flop"] == 0.0 and last["cum_flop"] == 33.3

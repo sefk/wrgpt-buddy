@@ -7,6 +7,7 @@
   var NS = "http://www.w3.org/2000/svg";
   var W = 800, H = 340, L = 64, R = 16, T = 16, B = 34;
   var defaultTip = tip.textContent;
+  var ROLLING = +(document.getElementById('flop-chart').getAttribute('data-rolling') || 10);
 
   function el(name, attrs, text, parent) {
     var e = document.createElementNS(NS, name);
@@ -39,7 +40,7 @@
       return { p: p, x: mode === "time" ? ms : i + 1, y: p.after };
     });
     if (mode === "time") pts = pts.filter(function (q) { return q.x != null; });
-    if (!pts.length) { drawField(t); drawRanking(t); return; }
+    if (!pts.length) { drawPlay(t, mode); drawField(t); drawRanking(t); return; }
     var field = showField.checked;
     var fpts = field ? pts.filter(function (q) { return q.p.field; }) : [];
     var xs = pts.map(function (q) { return q.x; }), ys = pts.map(function (q) { return q.y; });
@@ -103,8 +104,68 @@
         ", 25–75%ile " + money(f.p25) + "–" + money(f.p75);
       titled(c, label, tip, defaultTip);
     });
+    drawPlay(t, mode);
     drawField(t);
     drawRanking(t);
+  }
+
+  // Flop% and win% charts: a rolling line and a whole-tournament line, 0-100%.
+  var PLAY = [
+    { svg: "flop-chart", tip: "flop-tip", roll: "roll_flop", cum: "cum_flop",
+      what: function (p) { return p.flop ? "saw the flop" : "folded preflop / no flop"; } },
+    { svg: "win-chart", tip: "win-tip", roll: "roll_win", cum: "cum_win",
+      only: function (p) { return p.flop; },
+      what: function (p) { return p.won ? "won" : "lost"; } },
+  ];
+  function drawPlay(t, mode) {
+    PLAY.forEach(function (c) {
+      var s = document.getElementById(c.svg), tp = document.getElementById(c.tip);
+      s.innerHTML = "";
+      var PH = 240;
+      function e_(name, attrs, text) { return el(name, attrs, text, s); }
+      var pts = [];
+      t.points.forEach(function (p, i) {
+        if (p[c.cum] == null || (c.only && !c.only(p))) return;
+        var ms = p.time ? Date.parse(p.time) : null;
+        if (mode === "time" && ms == null) return;
+        pts.push({ p: p, i: i, x: mode === "time" ? ms : i + 1 });
+      });
+      if (!pts.length) { tp.textContent = "No finished hands yet."; return; }
+      tp.textContent = "";
+      var x0 = pts[0].x, x1 = pts[pts.length - 1].x;
+      if (x0 === x1) { x0 -= 1; x1 += 1; }
+      function sx(v) { return L + (v - x0) / (x1 - x0) * (W - L - R); }
+      function sy(v) { return PH - B - v / 100 * (PH - T - B); }
+      [0, 25, 50, 75, 100].forEach(function (v) {
+        e_("line", { x1: L, x2: W - R, y1: sy(v), y2: sy(v), "class": "grid" });
+        e_("text", { x: L - 6, y: sy(v) + 4, "text-anchor": "end" }, v + "%");
+      });
+      if (mode === "hand") {
+        var every = Math.ceil(t.points.length / 10);
+        t.points.forEach(function (p, i) {
+          if (i % every === 0 && i + 1 >= x0 && i + 1 <= x1)
+            e_("text", { x: sx(i + 1), y: PH - B + 16, "text-anchor": "middle" }, "#" + (i + 1));
+        });
+      } else {
+        ticks(x0, x1, 4).forEach(function (v) {
+          e_("text", { x: sx(v), y: PH - B + 16, "text-anchor": "middle" },
+            new Date(v).toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+        });
+      }
+      pts.forEach(function (q) {
+        if (!q.p.table_change) return;
+        var x = sx(q.x);
+        e_("line", { x1: x, x2: x, y1: T, y2: PH - B, "class": "event" });
+      });
+      e_("polyline", { "class": "mean", points: pts.map(function (q) { return sx(q.x) + "," + sy(q.p[c.cum]); }).join(" ") });
+      e_("polyline", { "class": "line", points: pts.map(function (q) { return sx(q.x) + "," + sy(q.p[c.roll]); }).join(" ") });
+      var fallback = "";
+      pts.forEach(function (q) {
+        var d = e_("circle", { cx: sx(q.x), cy: sy(q.p[c.roll]), r: 3.5, "class": "dot" });
+        titled(d, "Hand #" + q.p.number + " at " + q.p.table + " (" + c.what(q.p) + "): last " + ROLLING +
+          " " + q.p[c.roll] + "%, whole tournament " + q.p[c.cum] + "%", tp, fallback);
+      });
+    });
   }
 
   var fsvg = document.getElementById("field-chart");

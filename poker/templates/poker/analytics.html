@@ -26,6 +26,26 @@
   <p class="chart-tip muted small" id="chart-tip">Dashed orange lines mark a move to a different table.</p>
 </section>
 <section>
+  <h2>Hands played</h2>
+  <p class="muted small">Share of hands dealt to me that I saw the flop in (didn't fold preflop). Follows the tournament and X axis above.</p>
+  <svg id="flop-chart" data-rolling="{{ rolling }}" viewBox="0 0 800 240" role="img" aria-label="Share of hands I saw the flop in, over time"></svg>
+  <p class="chart-legend small">
+    <span class="key"></span> Last {{ rolling }} hands
+    <span class="key mean"></span> Whole tournament
+  </p>
+  <p class="chart-tip muted small" id="flop-tip"></p>
+</section>
+<section>
+  <h2>Win rate when in</h2>
+  <p class="muted small">Share of the hands I saw the flop in that I won (including split pots).</p>
+  <svg id="win-chart" viewBox="0 0 800 240" role="img" aria-label="Win rate in hands I saw the flop in, over time"></svg>
+  <p class="chart-legend small">
+    <span class="key"></span> Last {{ rolling }} hands I was in
+    <span class="key mean"></span> Whole tournament
+  </p>
+  <p class="chart-tip muted small" id="win-tip"></p>
+</section>
+<section>
   <h2>Tournament stacks</h2>
   <p class="muted small" id="field-note" data-base="Stack range of every player still in, from the daily wrgpt.org standings snapshots, with my stack{% if friends %} and my friends'{% endif %} alongside.">Stack range of every player still in, from the daily wrgpt.org standings snapshots, with my stack{% if friends %} and my friends'{% endif %} alongside.</p>
   <svg id="field-chart" viewBox="0 0 800 300" role="img" aria-label="Tournament stack range over time"></svg>

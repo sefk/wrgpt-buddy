@@ -11,7 +11,7 @@ from django.utils import timezone as djtz
 from django.views.decorators.http import require_POST
 
 from .advice import engine, grading
-from .bankroll import bankroll_series
+from .bankroll import ROLLING_HANDS, bankroll_series
 from .advice.points import LOOKAHEAD, live_point, my_decisions
 from .models import Action, Hand, MyHand, PlayerProfile, Recommendation
 from .state import MIN_HANDS_FOR_BADGE, PROFILE_BLURBS
@@ -575,4 +575,5 @@ def hand_list(request):
 
 def analytics(request):
     return render(request, "poker/analytics.html", {
-        "nav": "analytics", "series": bankroll_series(), "friends": settings.WRGPT_FRIENDS})
+        "nav": "analytics", "series": bankroll_series(), "friends": settings.WRGPT_FRIENDS,
+        "rolling": ROLLING_HANDS})

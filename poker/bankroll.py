@@ -6,7 +6,10 @@ from datetime import datetime, timezone
 
 from django.conf import settings
 
-from .models import Hand, StandingsSnapshot
+from .models import Action, Hand, StandingsSnapshot
+
+# Hands in the rolling window for the "seen the flop" and "won" charts.
+ROLLING_HANDS = 10
 
 # A table change whose first bankroll is within this fraction of the previous
 # hand's ending bankroll is a table move in the same tournament; anything else
@@ -72,6 +75,7 @@ def bankroll_series(me: str | None = None) -> list[dict]:
                 runs.append([(h, seat)])
         prev = (h, seat)
 
+    outcomes = _outcomes([h for h, _ in mine], me)
     snaps = list(StandingsSnapshot.objects.order_by("fetched_at"))
     starts = [min((t for t in (_when(h) for h, _ in run) if t), default=None) for run in runs]
     out = []
@@ -96,8 +100,10 @@ def bankroll_series(me: str | None = None) -> list[dict]:
                 "before": seat.bankroll_start, "after": after,
                 "table_change": last_table is not None and h.table_id != last_table,
                 "field": _field(h, me, after),
+                **outcomes[h.pk],
             })
             last_table = h.table_id
+        _add_play_stats(points)
         times = [p["time"] for p in points if p["time"]]
         out.append({
             "index": i,
@@ -113,6 +119,56 @@ def bankroll_series(me: str | None = None) -> list[dict]:
             "friends": list(settings.WRGPT_FRIENDS),
         })
     return out
+
+
+def _outcomes(hands, me: str) -> dict[int, dict]:
+    """{hand_id: {flop, won}} for hands I was dealt into.
+
+    `flop` is True when the flop came and I had not folded before it (betting round 1 is
+    preflop), False when I folded preflop or the hand ended before a flop; `won` is True when
+    the hand's results include a win for me. Both are None for a hand still being played.
+    """
+    ids = [h.pk for h in hands]
+    folded, won = set(), set()
+    for hand_id, kind, rnd in Action.objects.filter(
+        hand_id__in=ids, player__name=me, kind__in=["fold", "vacation_fold", "wins"]
+    ).values_list("hand_id", "kind", "betting_round"):
+        if kind == "wins":
+            won.add(hand_id)
+        elif rnd is not None and rnd <= 1:
+            folded.add(hand_id)
+    out = {}
+    for h in hands:
+        if not h.is_over:
+            out[h.pk] = {"flop": None, "won": None}
+        else:
+            out[h.pk] = {"flop": bool(h.board) and h.pk not in folded, "won": h.pk in won}
+    return out
+
+
+def _add_play_stats(points: list[dict]) -> None:
+    """Add rolling (last ROLLING_HANDS) and cumulative flop%/win% to each finished hand's point.
+
+    flop%: share of hands dealt that I saw the flop in. win%: share of the hands I saw the
+    flop in that I won. Each is None until there is a hand to measure.
+    """
+    dealt, played = [], []  # flop flags of all finished hands; won flags of hands with a flop
+    for p in points:
+        stats = {"roll_flop": None, "cum_flop": None, "roll_win": None, "cum_win": None}
+        if p["flop"] is not None:
+            dealt.append(p["flop"])
+            if p["flop"]:
+                played.append(p["won"])
+            stats["cum_flop"] = _pc(dealt)
+            stats["roll_flop"] = _pc(dealt[-ROLLING_HANDS:])
+            if played:
+                stats["cum_win"] = _pc(played)
+                stats["roll_win"] = _pc(played[-ROLLING_HANDS:])
+        p.update(stats)
+
+
+def _pc(flags: list[bool]) -> float:
+    return round(100 * sum(flags) / len(flags), 1)
 
 
 def _window(snaps, starts, i):
