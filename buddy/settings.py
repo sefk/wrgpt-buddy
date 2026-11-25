@@ -108,6 +108,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': db_name,
+        # The poll, web and recommend worker all write; wait for the lock instead of
+        # failing the ingest ("database is locked" at the 5 s default).
+        'OPTIONS': {'timeout': 30},
     }
 }
 

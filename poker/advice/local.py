@@ -65,7 +65,7 @@ def ensure_model(model: str, log=None) -> str:
     if model in (loaded_models() or ()):
         return ""
     if log:
-        log.warning("%s not loaded; running `lms load`", model)
+        log.info("%s not loaded; running `lms load`", model)
     try:
         r = subprocess.run(
             [settings.ADVICE_LMS_BIN, "load", model.split("@", 1)[0], "--identifier", model,

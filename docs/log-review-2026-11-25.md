@@ -46,3 +46,9 @@ Harmless. There is no favicon. Browsers ask on every first visit.
 - 11-23 19:02: b17 hand 59 lookahead judge failed with `ValueError: embedded null byte`.
 - 11-24 21:45: poll could not resolve `gmail.googleapis.com` (`ServerNotFoundError`). The web server
   restarted in the same minute, so this looks like a reboot or network-down moment.
+
+## Resolution
+
+- Finding 1: SQLite `timeout` raised to 30 s in `buddy/settings.py`. Takes effect on `bin/deploy`.
+- Finding 2: the `lms load` message demoted from WARNING to INFO.
+- Finding 3: left as is.
