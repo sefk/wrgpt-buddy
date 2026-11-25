@@ -10,7 +10,7 @@ import urllib.request
 
 from django.conf import settings
 
-from .prompt import RECOMMENDATION_SCHEMA
+from .prompt import ACTIONS, RECOMMENDATION_SCHEMA
 
 SYSTEM = "You are an expert no-limit hold'em coach. Reply only with the requested JSON."
 
@@ -103,6 +103,29 @@ def _parse(content: str) -> dict:
         return json.loads(m.group(0))
 
 
+def _normalize(data: dict) -> dict:
+    """Tidy a parsed answer. Models asked without a schema stray from it: `reasoning` as a list of
+    sentences, `command` wrapped in quote marks, `amount` as "$1,200" or 1200.0. Raises on an
+    unusable action or amount so the failure is recorded rather than graded."""
+    action = str(data["action"]).strip().lower()
+    if action not in ACTIONS:
+        raise ValueError(f"unknown action {data['action']!r}")
+    amount = data.get("amount")
+    if amount is not None:
+        if isinstance(amount, bool):
+            raise ValueError(f"bad amount {amount!r}")
+        try:
+            amount = int(float(str(amount).replace("$", "").replace(",", "").strip()))
+        except ValueError:
+            raise ValueError(f"bad amount {amount!r}") from None
+    reasoning = data.get("reasoning", "")
+    if isinstance(reasoning, (list, tuple)):
+        reasoning = " ".join(str(s).strip() for s in reasoning)
+    return {"action": action, "amount": amount,
+            "command": str(data.get("command") or "").strip().strip("\"'").strip(),
+            "reasoning": str(reasoning or "").strip()}
+
+
 def _blank(model: str, label: str) -> dict:
     return {"model": model, "label": label, "action": "", "amount": None, "command": "",
             "reasoning": "", "error": "", "seconds": 0.0}
@@ -136,11 +159,12 @@ def ask(model: str, label: str, prompt: str, remote: bool = False) -> dict:
         "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
         "temperature": 0.3,
         "max_tokens": 16000,  # reasoning models spend many tokens before the JSON
-        "response_format": {
+    }
+    if model not in settings.ADVICE_NO_SCHEMA_MODELS:
+        payload["response_format"] = {
             "type": "json_schema",
             "json_schema": {"name": "recommendation", "strict": True, "schema": RECOMMENDATION_SCHEMA},
-        },
-    }
+        }
     try:
         if remote:
             payload["usage"] = {"include": True}  # OpenRouter reports the cost of the call
@@ -153,11 +177,7 @@ def ask(model: str, label: str, prompt: str, remote: bool = False) -> dict:
                          payload, settings.ADVICE_LOCAL_TIMEOUT_S)
         msg = resp["choices"][0]["message"]
         # Reasoning models served by LM Studio sometimes put the answer in reasoning_content.
-        data = _parse(msg.get("content") or msg.get("reasoning_content"))
-        out["action"] = data["action"]
-        out["amount"] = data.get("amount")
-        out["command"] = data.get("command", "")
-        out["reasoning"] = data.get("reasoning", "")
+        out.update(_normalize(_parse(msg.get("content") or msg.get("reasoning_content"))))
     except Exception as e:  # noqa: BLE001 - recorded, never raised
         out["error"] = f"{type(e).__name__}: {e}"
     out["seconds"] = round(time.monotonic() - t0, 1)

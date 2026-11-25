@@ -90,6 +90,13 @@ in `buddy/settings.py` (`ADVICE_*`). Before each local call the app checks
 because JIT loads right after a reboot have stalled. The request timeout then
 covers inference only (`ADVICE_LOCAL_TIMEOUT_S`, 300s).
 
+Local models are asked for a strict JSON schema, except the ones in
+`ADVICE_NO_SCHEMA_MODELS` (default `openai/gpt-oss-20b`, comma-separated). A schema
+constrains decoding from the first token, so gpt-oss never gets its reasoning
+phase and wrote half-finished thoughts into the answer ("…", "Wait…"), about
+a third of the time. Without the schema it thinks first, and the reply is parsed
+tolerantly (code fences, a list `reasoning`, a quoted `command`).
+
 A fourth model, Qwen Flash (`qwen/qwen3.8-flash`), runs on OpenRouter, about
 $0.003 per decision. Set `OPENROUTER_API_KEY` in `.env` to enable it; without a
 key it is skipped. Change the model with `ADVICE_REMOTE_MODELS` (`model_id=Label`;

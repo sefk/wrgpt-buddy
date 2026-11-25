@@ -131,6 +131,41 @@ def test_local_uses_json_schema(fakes):
     assert payload["response_format"]["json_schema"]["strict"] is True
 
 
+def test_gpt_oss_is_asked_without_a_schema(fakes):
+    # a strict schema leaves gpt-oss no reasoning phase; it then trails off mid-thought
+    local.ask("openai/gpt-oss-20b", "gpt-oss", "p")
+    assert "response_format" not in fakes["post"][0][1]
+
+
+def test_no_schema_models_are_configurable(fakes, settings):
+    settings.ADVICE_NO_SCHEMA_MODELS = ["qwen/x"]
+    local.ask("qwen/x", "Qwen", "p")
+    local.ask("openai/gpt-oss-20b", "gpt-oss", "p")
+    assert "response_format" not in fakes["post"][0][1]
+    assert fakes["post"][1][1]["response_format"]["type"] == "json_schema"
+
+
+def test_local_normalizes_a_loose_answer(monkeypatch):
+    loose = {"action": "Raise", "amount": "$1,200", "command": '"BET $1100"',
+             "reasoning": ["We have top pair.", " Bet for value. "]}
+    monkeypatch.setattr(local, "_post", lambda *a: {"choices": [{"message": {
+        "content": "```json\n" + json.dumps(loose) + "\n```"}}]})
+    o = local.ask("m", "M", "p")
+    assert o["error"] == ""
+    assert (o["action"], o["amount"], o["command"]) == ("raise", 1200, "BET $1100")
+    assert o["reasoning"] == "We have top pair. Bet for value."
+
+
+@pytest.mark.parametrize("bad", [{"action": "shove", "amount": None},
+                                 {"action": "bet", "amount": "lots"},
+                                 {"action": "bet", "amount": True}])
+def test_local_rejects_unusable_answers(monkeypatch, bad):
+    monkeypatch.setattr(local, "_post", lambda *a: {"choices": [{"message": {
+        "content": json.dumps({"command": "", "reasoning": "r", **bad})}}]})
+    o = local.ask("m", "M", "p")
+    assert o["action"] == "" and o["error"].startswith("ValueError")
+
+
 def test_local_strips_think():
     assert local._parse('<think>hmm {x}</think>{"a": 1}') == {"a": 1}
 

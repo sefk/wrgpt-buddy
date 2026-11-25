@@ -209,6 +209,10 @@ if os.environ.get('ADVICE_LOCAL_MODELS'):  # "model_id=Label,model_id=Label"
 ADVICE_LOCAL_TIMEOUT_S = int(os.environ.get('ADVICE_LOCAL_TIMEOUT_S', '300'))
 ADVICE_LOCAL_LOAD_TIMEOUT_S = int(os.environ.get('ADVICE_LOCAL_LOAD_TIMEOUT_S', '300'))
 ADVICE_LOCAL_CONTEXT = int(os.environ.get('ADVICE_LOCAL_CONTEXT', '32768'))
+# Models asked WITHOUT the strict json_schema. A schema makes LM Studio constrain decoding from the
+# first token, so gpt-oss gets no reasoning phase and writes its half-formed thoughts into the
+# `reasoning` field, trailing off in "…" (35% of its answers). Unconstrained it thinks first.
+ADVICE_NO_SCHEMA_MODELS = _env_list('ADVICE_NO_SCHEMA_MODELS', 'openai/gpt-oss-20b')
 ADVICE_LOCAL_TTL_S = int(os.environ.get('ADVICE_LOCAL_TTL_S', '3600'))
 # Models too big for this machine, served by OpenRouter. Skipped when there is no key.
 OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
